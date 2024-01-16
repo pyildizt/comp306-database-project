@@ -85,13 +85,13 @@ db_connection = mysql.connector.connect(
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
-db_cursor.execute("CREATE DATABASE test_for_ip")
+db_cursor.execute("CREATE DATABASE IF NOT EXISTS test_for_ip")
 db_cursor.execute("USE test_for_ip")
 
 # Create basic table
-db_cursor.execute("""CREATE TABLE PEOPLE (name VARCHAR(50),
-                                          surname VARCHAR(50),
-                                          id_no INT NOT NULL)""")
+db_cursor.execute("""CREATE TABLE IF NOT EXISTS PEOPLE (name VARCHAR(50),
+                                                         surname VARCHAR(50),
+                                                         id_no INT NOT NULL)""")
 
 # Insert some values
 db_cursor.execute("""INSERT INTO PEOPLE(name, surname, id_no)
