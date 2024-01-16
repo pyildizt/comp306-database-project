@@ -1,3 +1,6 @@
+
+### NEED TO RUN THIS CODE FROM TERMINAL IN VSCODE USING python deneme.py
+
 # Imports for ui
 import customtkinter
 from tkinter import *
@@ -13,7 +16,7 @@ customtkinter.set_default_color_theme("blue")
 
 # Main application 
 main_app = customtkinter.CTk()
-main_app.title("Intellectual Property Firm System")
+main_app.title("Intellectual Property Law Firm Management System")
 main_app.geometry("1200x700")
 
 ### A Tabview
@@ -29,10 +32,6 @@ for i in tabs:
 tabview.set("Lawyers") # set as default tab
 lawyers_tab = tabview.tab("Lawyers")
 
-# Add label to Tab2
-label2 = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="This is the Clients tab.")
-label2.pack(pady=10, padx=10)
-
 ### A Label
 label = customtkinter.CTkLabel(master=lawyers_tab, text="Lawyers in the Firm")
 label.pack(pady=10, padx=10)
@@ -44,21 +43,21 @@ label.pack(pady=10, padx=10)
 # Basic table with column names and info to show you how treeview works
 table_columns = ("id","fname","lname","sex","fee","email","phone_number")
 
-tree = ttk.Treeview(master=lawyers_tab, columns=table_columns, show="headings", selectmode="browse",height=20) 
+lawyers_tree = ttk.Treeview(master=lawyers_tab, columns=table_columns, show="headings", selectmode="browse",height=20) 
 # selectmode="browse" means the user can only select one row at a time
-tree.pack() # makes ui look good i guess, DO NOT ERASE
+lawyers_tree.pack() # makes ui look good i guess, DO NOT ERASE
 
 # this is used to make the heading names look better
 
-tree.heading("id",text="ID")
-tree.heading("fname",text="Name")
-tree.heading("lname",text="Surname")
-tree.heading("sex",text="Sex")
-tree.heading("fee",text="Fee")
-tree.heading("email",text="Email")
-tree.heading("phone_number",text="Phone No")
+lawyers_tree.heading("id",text="ID")
+lawyers_tree.heading("fname",text="Name")
+lawyers_tree.heading("lname",text="Surname")
+lawyers_tree.heading("sex",text="Sex")
+lawyers_tree.heading("fee",text="Fee")
+lawyers_tree.heading("email",text="Email")
+lawyers_tree.heading("phone_number",text="Phone No")
 for i in range(5):
-    tree.column(i,width=80, stretch=NO)
+    lawyers_tree.column(i,width=80, stretch=NO)
 
 
 # Database connection
@@ -107,25 +106,100 @@ db_cursor.execute("""SELECT * FROM LAWYERS""")
 rows = db_cursor.fetchall()
 
 for i in rows:
-    tree.insert("", END, values=i)
+    lawyers_tree.insert("", END, values=i)
 
 # Example 2
 def removeFromDatabase():
-    if tree.selection() != None: # this is the row selected by user
+    if lawyers_tree.selection() != None: # this is the row selected by user
 
         # This is how you get the values from selected item, just copy paste it
-        selectedItemValues = tree.item(tree.focus()).get('values')
+        selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
 
         db_cursor.execute("""DELETE FROM LAWYERS 
                             WHERE id = """ + str(selectedItemValues[0]))
         db_connection.commit()
 
         # also delete from treeview
-        tree.delete(tree.selection())
+        lawyers_tree.delete(lawyers_tree.selection())
 
 
 remove_button = customtkinter.CTkButton(master=lawyers_tab, text="Remove Lawyer", command=removeFromDatabase)
 remove_button.pack(pady=20)
+
+
+
+####### CLIENTS TAB
+
+clients_tab = tabview.tab("Clients")
+
+### A Label
+clients_label = customtkinter.CTkLabel(master=clients_tab, text="Clients of the Firm")
+clients_label.pack(pady=10, padx=10)
+
+### A Treeview
+table_columns = ("id","fname","lname","sex","fee","email","phone_number")
+
+table_columns2 = ("client_id","fname","lname","sex","age","bdate","state")
+
+clients_tree = ttk.Treeview(master=clients_tab, columns=table_columns2, show="headings", selectmode="browse",height=20) 
+clients_tree.pack()
+
+# this is used to make the heading names look better
+clients_tree.heading("client_id", text="Client ID")
+clients_tree.heading("fname", text="First Name")
+clients_tree.heading("lname", text="Last Name")
+clients_tree.heading("sex", text="Sex")
+clients_tree.heading("age", text="Age")
+clients_tree.heading("bdate", text="Birth Date")
+clients_tree.heading("state", text="State")
+for i in range(7):
+    clients_tree.column(i,width=100, stretch=NO)
+
+# Create basic table
+db_cursor.execute("""CREATE TABLE IF NOT EXISTS CLIENTS (
+    client_id INT NOT NULL,
+    fname VARCHAR(50),
+    lname VARCHAR(50),
+    sex VARCHAR(6),
+    age INT,
+    bdate DATE,
+    state VARCHAR(50),
+    PRIMARY KEY (client_id))""")
+
+insert_clients = (
+    "INSERT INTO CLIENTS (client_id, fname, lname, sex, age, bdate, state)"
+    "VALUES (%s, %s, %s, %s, %s, %s, %s)")
+
+# Insert some values
+populate_table(db_connection, db_cursor, insert_clients, "clients.csv")
+
+# Get all values from table
+db_cursor.execute("""SELECT * FROM CLIENTS""")
+
+# Insert values into Treeview
+rows = db_cursor.fetchall()
+
+for i in rows:
+    clients_tree.insert("", END, values=i)
+
+# Example 2
+def removeFromDatabase2():
+    if clients_tree.selection() != None: # this is the row selected by user
+
+        # This is how you get the values from selected item, just copy paste it
+        selectedItemValues = clients_tree.item(clients_tree.focus()).get('values')
+
+        db_cursor.execute("""DELETE FROM CLIENTS 
+                            WHERE client_id = """ + str(selectedItemValues[0]))
+        db_connection.commit()
+
+        # also delete from treeview
+        clients_tree.delete(clients_tree.selection())
+
+
+remove_button2 = customtkinter.CTkButton(master=clients_tab, text="Remove Client", command=removeFromDatabase2)
+remove_button2.pack(pady=20)
+
 
 # Start the ui
 main_app.mainloop()
