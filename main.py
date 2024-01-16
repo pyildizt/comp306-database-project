@@ -30,7 +30,7 @@ tabs = ["Tab1", "Tab2", "Tab3"]
 for i in tabs:
     tabview.add(i)
 
-tabview.set("Tab2") # set as default tab
+tabview.set("Tab1") # set as default tab
 
 # Add label to Tab2
 label2 = customtkinter.CTkLabel(master=tabview.tab("Tab2"), text="This is tab2!")
@@ -88,6 +88,7 @@ for i in info:
 # Example
 def removeFromTree():
     if tree.selection() != None: # this is the row selected by user
+        print(tree.selection())
         tree.delete(tree.selection())
 
 remove_button = customtkinter.CTkButton(master=frame, text="Remove Item From Tree", command=removeFromTree)
@@ -105,6 +106,9 @@ db_connection = mysql.connector.connect(
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
+
+db_cursor.execute("DROP DATABASE test_for_ip") # might be necessary for testing
+
 db_cursor.execute("CREATE DATABASE IF NOT EXISTS test_for_ip")
 db_cursor.execute("USE test_for_ip")
 
@@ -128,10 +132,30 @@ db_cursor.execute("""SELECT * FROM PEOPLE""")
 rows = db_cursor.fetchall()
 
 for i in rows:
-    print(i)
     tree.insert("", END, values=i)
 
 
+# Example 2
+def removeFromDatabase():
+    if tree.selection() != None: # this is the row selected by user
+
+        ### IMPORTANT BIT ###
+        # This is how you get the values from selected item, just copy paste it
+        selectedItemValues = tree.item(tree.focus()).get('values')
+        #####################
+
+        print(selectedItemValues)
+
+        db_cursor.execute("""DELETE FROM PEOPLE 
+                            WHERE id_no = """ + str(selectedItemValues[2]))
+        db_connection.commit()
+
+        # also delete from treeview
+        tree.delete(tree.selection())
+
+
+remove_button = customtkinter.CTkButton(master=frame, text="Remove Item From Database", command=removeFromDatabase)
+remove_button.place(x=200,y=500)
 
 # Start the ui
 main_app.mainloop()
