@@ -16,9 +16,29 @@ main_app.title("Intellectual Property Firm System")
 main_app.geometry("1200x700")
 
 ### A Frame
-frame = customtkinter.CTkFrame(master=main_app)
-frame.pack(pady=20, padx=20, fill="both", expand=True)
-# We will probably have to create different frames for different pages but I dont know how to do that yet :P
+#frame = customtkinter.CTkFrame(master=main_app)
+#frame.pack(pady=20, padx=20, fill="both", expand=True)
+
+
+### A Tabview
+tabview = customtkinter.CTkTabview(master=main_app)
+tabview.pack(pady=20, padx=20, fill="both", expand=True)
+
+# Adding tabs
+tabs = ["Tab1", "Tab2", "Tab3"]
+
+for i in tabs:
+    tabview.add(i)
+
+tabview.set("Tab2") # set as default tab
+
+# Add label to Tab2
+label2 = customtkinter.CTkLabel(master=tabview.tab("Tab2"), text="This is tab2!")
+label2.pack(pady=10, padx=10)
+
+
+frame = tabview.tab("Tab1") # So i do not have to change all the code,
+# Basically master=frame or master=tabview.tab("Tab1") is where the components are put into
 
 
 ### A Label
