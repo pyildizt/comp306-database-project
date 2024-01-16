@@ -99,6 +99,8 @@ db_cursor.execute("""INSERT INTO PEOPLE(name, surname, id_no)
 db_cursor.execute("""INSERT INTO PEOPLE(name, surname, id_no)
                     VALUES ("Turgut", "Yılmaz", 8)""")
 
+db_connection.commit() # otherwise it does not actually update your local mysql database
+
 # Get all values from table
 db_cursor.execute("""SELECT * FROM PEOPLE""")
 
@@ -106,6 +108,7 @@ db_cursor.execute("""SELECT * FROM PEOPLE""")
 rows = db_cursor.fetchall()
 
 for i in rows:
+    print(i)
     tree.insert("", END, values=i)
 
 
