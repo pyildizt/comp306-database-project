@@ -6,7 +6,7 @@ from tkinter import ttk
 # Import for database
 import mysql.connector
 import csv
-import pandas as pd
+#import pandas as pd
 
 #CREATE DATABASE:
 db_connection = mysql.connector.connect(
@@ -190,6 +190,42 @@ main_app = customtkinter.CTk()
 main_app.title("Intellectual Property Firm System")
 main_app.geometry("1200x700")
 
+def loginWindow():
+    login_window = customtkinter.CTkToplevel(main_app) 
+    login_window.title("Login")
+    login_window.geometry("500x300")
+
+    main_app.withdraw() #iconify()
+
+    frame = customtkinter.CTkFrame(master=login_window) 
+    frame.pack(pady=20,padx=40,fill='both',expand=True)
+
+    login_label1 = customtkinter.CTkLabel(master=frame, text="")
+    login_label1.pack(pady=10, padx=10)
+    
+    user_entry= customtkinter.CTkEntry(master=frame,placeholder_text="Username") 
+    user_entry.pack(pady=12,padx=10) 
+    
+    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*") 
+    user_pass.pack(pady=12,padx=10)
+
+    login_label2 = customtkinter.CTkLabel(master=frame, text="")
+
+    def login():
+        username = "admin"
+        password = "1234"
+        if user_entry.get() == username and user_pass.get() == password: 
+            main_app.deiconify()
+            login_window.destroy()
+        else:
+            login_label2.configure(text="Incorrect password. Try again.")
+
+    button = customtkinter.CTkButton(master=frame,text='Login',command=login) 
+    button.pack(pady=12,padx=10) 
+    login_label2.pack(pady=10, padx=10) 
+
+
+
 ### Tabview
 tabview = customtkinter.CTkTabview(master=main_app)
 tabview.pack(pady=20, padx=20, fill="both", expand=True)
@@ -292,4 +328,5 @@ remove_button.place(x=700,y=500)
 
 
 # Start the ui
+loginWindow()
 main_app.mainloop()
