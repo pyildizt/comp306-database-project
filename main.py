@@ -88,13 +88,14 @@ populate_table(db_connection, db_cursor, insert_departments, "./data/Department.
 db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawyer (
                     lawyer_id CHAR(6),
                     department_id CHAR(6),
+                    winning_rate INT,
                     PRIMARY KEY (lawyer_id),
                     FOREIGN KEY (lawyer_id) REFERENCES Staff(id),
                     FOREIGN KEY (department_id) REFERENCES Department(department_id))""")
 
 insert_lawyers = (
-    "INSERT INTO Lawyer(lawyer_id, department_id) "
-    "VALUES (%s, %s)"
+    "INSERT INTO Lawyer(lawyer_id, department_id, winning_rate) "
+    "VALUES (%s, %s, %s)"
 )
 
 populate_table(db_connection, db_cursor, insert_lawyers, "./data/Lawyer.csv")
@@ -126,7 +127,6 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawsuit (
                         lawsuit_id CHAR(6),
                         verdict VARCHAR(30),
                         court_date DATE,
-                        judge_id CHAR(6),
                         judge_name VARCHAR(50),
                         client_id CHAR(6),
                         PRIMARY KEY (lawsuit_id),
@@ -134,8 +134,8 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawsuit (
                     )""")
 
 insert_lawsuits = (
-    "INSERT INTO Lawsuit(lawsuit_id, verdict, court_date, judge_id, judge_name, client_id) "
-    "VALUES (%s, %s, %s, %s, %s, %s)"
+    "INSERT INTO Lawsuit(lawsuit_id, verdict, court_date, judge_name, client_id) "
+    "VALUES (%s, %s, %s, %s, %s)"
 )
 
 populate_table(db_connection, db_cursor, insert_lawsuits, "./data/Lawsuit.csv")
@@ -232,6 +232,7 @@ button.pack(pady=10, padx=10)
 ### A Treeview
 #df = pd.read_csv('./data/Lawyer.csv')
 #lawyers_columns = list(df.columns)
+
 
 #db_cursor.execute("SELECT * FROM Lawyer")
 #lawyers = db_cursor.fetchall()
