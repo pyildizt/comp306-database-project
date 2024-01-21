@@ -2,9 +2,200 @@
 import customtkinter
 from tkinter import *
 from tkinter import ttk
+import csv
 
 # Import for database
 import mysql.connector
+
+#CREATE DATABASE:
+db_connection = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  passwd="123678zulal", 
+  auth_plugin='mysql_native_password'
+)
+db_cursor = db_connection.cursor(buffered=True)
+
+
+def populate_table(db_connection, db_cursor, insert_query, file_path):
+    
+    with open(file_path, mode='r') as csv_data:
+        reader = csv.reader(csv_data, delimiter=';')
+        csv_data_list = list(reader)
+        for row in csv_data_list[1:]:
+            row = tuple(map(lambda x: None if x == "" else x, row[0].split(',')))
+            db_cursor.execute(insert_query, row)
+        
+    db_connection.commit()
+
+db_cursor.execute("DROP DATABASE law_firm")
+db_cursor.execute("CREATE DATABASE IF NOT EXISTS law_firm")
+db_cursor.execute("USE law_firm")
+
+
+# Create Staff table
+db_cursor.execute("""CREATE TABLE Staff (
+                    id CHAR(6),
+                    fname VARCHAR(30),
+                    lname VARCHAR(30),
+                    sex CHAR(1),
+                    phone_number CHAR(11),
+                    email VARCHAR(50),
+                    salary INT,
+                    PRIMARY KEY (id))""")
+
+insert_staff = (
+    "INSERT INTO Staff(id, fname, lname, sex, phone_number, email, salary) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_staff, "./data/Staff.csv")
+
+
+#Create Administrator table
+db_cursor.execute("""CREATE TABLE Administrator (
+                    admin_id CHAR(6),
+                    PRIMARY KEY (admin_id),
+                    FOREIGN KEY (admin_id) REFERENCES Staff(id))""")
+
+insert_administrators = (
+    "INSERT INTO Administrator(admin_id) "
+    "VALUES (%s)"
+)
+
+populate_table(db_connection, db_cursor, insert_administrators, "./data/Administrator.csv")
+
+
+# Create Department table
+db_cursor.execute("""CREATE TABLE Department (
+                    department_id CHAR(6),
+                    department_name VARCHAR(50),
+                    admin_id CHAR(6),
+                    PRIMARY KEY (department_id),
+                    FOREIGN KEY (admin_id) REFERENCES Administrator(admin_id)
+                )""")
+
+insert_departments = (
+    "INSERT INTO Department(department_id, department_name, admin_id) "
+    "VALUES (%s, %s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_departments, "./data/Department.csv")
+
+
+# Create Lawyer table
+db_cursor.execute("""CREATE TABLE Lawyer (
+                    lawyer_id CHAR(6),
+                    department_id CHAR(6),
+                    PRIMARY KEY (lawyer_id),
+                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id),
+                    FOREIGN KEY (department_id) REFERENCES Department(department_id))""")
+
+insert_lawyers = (
+    "INSERT INTO Lawyer(lawyer_id, department_id) "
+    "VALUES (%s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_lawyers, "./data/Lawyer.csv")
+
+
+# Create Client table
+db_cursor.execute("""CREATE TABLE Client (
+                    client_id CHAR(6),
+                    fname VARCHAR(30),
+                    lname VARCHAR(30),
+                    sex CHAR(1),
+                    age INT,
+                    phone_number CHAR(12),
+                    email VARCHAR(50),
+                    address VARCHAR(50),
+                    bdate DATE,
+                    state VARCHAR(50),
+                    PRIMARY KEY (client_id))""")
+
+insert_clients = (
+    "INSERT INTO Client(client_id, fname, lname, sex, age, phone_number, email, address, bdate, state) "
+    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_clients, "./data/Client.csv")
+
+## create Lawsuit table
+db_cursor.execute("""CREATE TABLE Lawsuit (
+                        lawsuit_id CHAR(6),
+                        verdict VARCHAR(30),
+                        court_date DATE,
+                        judge_id CHAR(6),
+                        judge_name VARCHAR(50),
+                        client_id CHAR(6),
+                        PRIMARY KEY (lawsuit_id),
+                        FOREIGN KEY (client_id) REFERENCES Client(client_id)
+                    )""")
+
+insert_lawsuits = (
+    "INSERT INTO Lawsuit(lawsuit_id, verdict, court_date, judge_id, judge_name, client_id) "
+    "VALUES (%s, %s, %s, %s, %s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_lawsuits, "./data/Lawsuit.csv")
+
+
+# create Represents table
+db_cursor.execute("""CREATE TABLE Represents (
+                        lawyer_id CHAR(6),
+                        lawsuit_id CHAR(6),
+                        fee INT,
+                        PRIMARY KEY (lawyer_id, lawsuit_id),
+                        FOREIGN KEY (lawyer_id) REFERENCES Lawyer(lawyer_id),
+                        FOREIGN KEY (lawsuit_id) REFERENCES Lawsuit(lawsuit_id)
+                    )""")
+
+insert_represents = (
+    "INSERT INTO Represents(lawyer_id, lawsuit_id, fee) "
+    "VALUES (%s, %s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_represents, "./data/Represents.csv")
+
+
+# Create Product table
+db_cursor.execute("""CREATE TABLE Product (
+                        product_id CHAR(6),
+                        product_name VARCHAR(50),
+                        PRIMARY KEY(product_id))""")
+
+# Insert into Product table
+insert_products = (
+    "INSERT INTO Product(product_id, product_name) "
+    "VALUES (%s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_products, "./data/Products.csv")
+
+
+# Create Patents table
+db_cursor.execute("""CREATE TABLE Patents (
+                        lawyer_id CHAR(6),
+                        client_id CHAR(6),
+                        product_id CHAR(6),
+                        fee INT,
+                        PRIMARY KEY(lawyer_id, client_id, product_id),
+                        FOREIGN KEY(lawyer_id) REFERENCES Lawyer(lawyer_id),
+                        FOREIGN KEY(client_id) REFERENCES Client(client_id),
+                        FOREIGN KEY(product_id) REFERENCES Product(product_id))""")
+
+# Insert into Patents table
+insert_patents = (
+    "INSERT INTO Patents(lawyer_id, client_id, product_id, fee) "
+    "VALUES (%s, %s, %s, %s)"
+)
+
+populate_table(db_connection, db_cursor, insert_patents, "./data/Patents.csv")
+
+
+
+
+
 
 # Appearance and style of ui - not really important
 customtkinter.set_appearance_mode("Light")
@@ -14,6 +205,7 @@ customtkinter.set_default_color_theme("blue")
 main_app = customtkinter.CTk()
 main_app.title("Intellectual Property Firm System")
 main_app.geometry("1200x700")
+
 
 ### A Frame
 #frame = customtkinter.CTkFrame(master=main_app)
@@ -102,19 +294,18 @@ remove_button.place(x=700,y=500)
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468", 
+  passwd="123678zulal", 
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
 
-db_cursor.execute("DROP DATABASE test_for_ip") # might be necessary for testing
-
+#db_cursor.execute("DROP DATABASE test_for_ip") # might be necessary for testing
 db_cursor.execute("CREATE DATABASE IF NOT EXISTS test_for_ip")
 db_cursor.execute("USE test_for_ip")
 
 # Create basic table
 db_cursor.execute("""CREATE TABLE IF NOT EXISTS PEOPLE (name VARCHAR(50),
-                                                         surname VARCHAR(50),
+                                                        surname VARCHAR(50),
                                                          id_no INT NOT NULL)""")
 
 # Insert some values
