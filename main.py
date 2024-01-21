@@ -3,6 +3,8 @@ import customtkinter
 from tkinter import *
 from tkinter import ttk
 import csv
+import pandas as pd
+
 
 # Import for database
 import mysql.connector
@@ -158,42 +160,25 @@ insert_represents = (
 populate_table(db_connection, db_cursor, insert_represents, "./data/Represents.csv")
 
 
-# Create Product table
-db_cursor.execute("""CREATE TABLE Product (
-                        product_id CHAR(6),
-                        product_name VARCHAR(50),
-                        PRIMARY KEY(product_id))""")
 
-# Insert into Product table
-insert_products = (
-    "INSERT INTO Product(product_id, product_name) "
-    "VALUES (%s, %s)"
-)
-
-populate_table(db_connection, db_cursor, insert_products, "./data/Products.csv")
-
-
-# Create Patents table
-db_cursor.execute("""CREATE TABLE Patents (
+# Create Counsels table
+db_cursor.execute("""CREATE TABLE Counsels (
                         lawyer_id CHAR(6),
                         client_id CHAR(6),
-                        product_id CHAR(6),
                         fee INT,
-                        PRIMARY KEY(lawyer_id, client_id, product_id),
+                        date DATE,
+                        PRIMARY KEY(lawyer_id, client_id),
                         FOREIGN KEY(lawyer_id) REFERENCES Lawyer(lawyer_id),
-                        FOREIGN KEY(client_id) REFERENCES Client(client_id),
-                        FOREIGN KEY(product_id) REFERENCES Product(product_id))""")
+                        FOREIGN KEY(client_id) REFERENCES Client(client_id)
+                        )""")
 
 # Insert into Patents table
 insert_patents = (
-    "INSERT INTO Patents(lawyer_id, client_id, product_id, fee) "
+    "INSERT INTO Patents(lawyer_id, client_id, fee, date) "
     "VALUES (%s, %s, %s, %s)"
 )
 
-populate_table(db_connection, db_cursor, insert_patents, "./data/Patents.csv")
-
-
-
+populate_table(db_connection, db_cursor, insert_patents, "./data/Counsels.csv")
 
 
 
@@ -234,7 +219,7 @@ frame = tabview.tab("Tab1") # So i do not have to change all the code,
 
 
 ### A Label
-label = customtkinter.CTkLabel(master=frame, text="Hello World")
+label = customtkinter.CTkLabel(master=frame, text="Lawyers")
 label.pack(pady=10, padx=10)
 # note: Anything with a CTk before it like CTkFrame is from customtkinter library and lets you use .pack(pady=?, padx=?)
 # But other things like Treeview is from tkinter library so you have to use .place(x=?, y=?)
@@ -261,6 +246,11 @@ button.pack(pady=10, padx=10)
 # Used to view tables
 
 # Basic table with column names and info to show you how treeview works
+db_cursor.execute("SELECT * FROM Lawyer")
+lawyers = db_cursor.fetchall()
+df = pd.read_csv('./data/Lawyer.csv')
+lawyers_columns = list(df.columns)
+
 table_columns = ("name","surname","id_no")
 info = (("Ali","Aman",5),("Fatma","Tekin",7),("Öykü","Dolu",11))
 
