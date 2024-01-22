@@ -16,12 +16,13 @@ import re
 import mysql.connector
 import csv
 import pandas as pd
+import re
 
 #CREATE DATABASE:
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468", 
+  passwd="z1x?1zKucs",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -207,33 +208,46 @@ def loginWindow():
     login_window.geometry("500x300+500+300")
 
     main_app.withdraw() #iconify()
-
     frame = customtkinter.CTkFrame(master=login_window) 
     frame.pack(pady=20,padx=40,fill='both',expand=True)
 
     login_label1 = customtkinter.CTkLabel(master=frame, text="")
     login_label1.pack(pady=10, padx=10)
     
-    user_entry= customtkinter.CTkEntry(master=frame,placeholder_text="Username") 
-    user_entry.pack(pady=12,padx=10) 
-    
-    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*") 
+    admin_id_query = db_cursor.execute("""SELECT admin_id FROM Administrator""")
+    admin_ids = db_cursor.fetchall() 
+    admin_ids_list = [i[0] for i in admin_ids]
+
+    admin_id_combobox = ttk.Combobox(master=frame, values=admin_ids_list, state="readonly", width = 30)
+    admin_id_combobox.set("Admin ID")
+    admin_id_combobox.pack(pady=12, padx=120)
+
+    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*", width=180) 
     user_pass.pack(pady=12,padx=10)
 
-    login_label2 = customtkinter.CTkLabel(master=frame, text="")
 
     def login():
-        username = "admin"
-        password = "1234"
-        if user_entry.get() == username and user_pass.get() == password: 
+        username = admin_id_combobox.get()  # Use the selected admin ID as the username
+        password = user_pass.get()
+
+        adm_password = db_cursor.execute("""SELECT password FROM Administrator WHERE Administrator.admin_id = %s""", (username,))
+        adm_password = db_cursor.fetchall()
+        adm_password = str(adm_password[0][0])
+
+        if password == adm_password: 
             main_app.deiconify()
             login_window.destroy()
+
+        elif password == "":
+            messagebox.showwarning("Password Error", "Admin password is null!")
+
         else:
-            login_label2.configure(text="Incorrect password. Try again.")
+            messagebox.showwarning("Password Error", "Admin password is wrong!")
+            return
+            
 
     button = customtkinter.CTkButton(master=frame,text='Login',command=login) 
     button.pack(pady=12,padx=10) 
-    login_label2.pack(pady=10, padx=10) 
 
 
 
@@ -685,6 +699,89 @@ sort_clients_by_state_button = customtkinter.CTkButton(master=tabview.tab("Clien
 
 
 ##### LAWSUITS TAB
+
+lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="Lawsuits")
+lawsuitTitle.pack(padx=10,pady=10)
+lawsuitColumns = ["lawsuit_id","verdict","court_date","judge_name","client_id"]
+lawsuitTree = ttk.Treeview(master=tabview.tab("Lawsuits"), columns=lawsuitColumns, show="headings", selectmode="browse")
+lawsuitTree.pack()
+lawsuitTree.heading("lawsuit_id",text="Lawsuit ID")
+lawsuitTree.heading("verdict",text="Verdict")
+lawsuitTree.heading("court_date",text="Court Date")
+lawsuitTree.heading("judge_name",text="Judge Name")
+lawsuitTree.heading("client_id",text="Client ID")
+
+allLawsuitsQuery = """SELECT * FROM Lawsuit"""
+db_cursor.execute(allLawsuitsQuery)
+allLawsuits = db_cursor.fetchall()
+for lawsuit in allLawsuits:
+    lawsuitTree.insert("",END,values=lawsuit)
+
+def showLawsuitDetails():
+    return
+
+showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details",command=showLawsuitDetails)
+showLawsuitDetailsButton.place(x=120,y=300)
+
+def removeLawsuit():
+    selectedLawsuit = lawsuitTree.item(lawsuitTree.focus(),"values")
+    removeLawsuitQuery = """DELETE FROM Lawsuit WHERE lawsuit_id = '{0}'""".format(selectedLawsuit[0])
+    db_cursor.execute(removeLawsuitQuery)
+    db_connection.commit()
+    lawsuitTree.delete(lawsuitTree.selection())
+    return
+
+removeLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Remove Lawsuit",command=removeLawsuit)
+removeLawsuitButton.place(x=350,y=300)
+
+
+
+lawsuitIDLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Lawsuit ID:")
+lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="LWSXXX")
+lawsuitIDEntry.place(x=880,y=300)
+lawsuitIDLabel.place(x=780,y=300)
+
+verdictLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Verdict:")
+verdictEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Guilty/Free")
+verdictEntry.place(x=880,y=330)
+verdictLabel.place(x=780,y=330)
+
+courtDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Court Date:")
+courtDateEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
+courtDateEntry.place(x=880,y=360)
+courtDateLabel.place(x=780,y=360)
+
+judgeNameLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Judge Name:")
+judgeNameEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Judge XXXX")
+judgeNameEntry.place(x=880,y=390)
+judgeNameLabel.place(x=780,y=390)
+
+clientIdLabel = customtkinter.CTkLabel(master= tabview.tab("Lawsuits"),text="Client ID:")
+clientIdEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="CLIXX")
+clientIdEntry.place(x=880,y=420)
+clientIdLabel.place(x=780,y=420)
+
+def addLawsuitButtonClick():
+    lawsuitId = lawsuitIDEntry.get()
+    verdict = verdictEntry.get()
+    courtDate = courtDateEntry.get()
+    judgeName = judgeNameEntry.get()
+    clientId = clientIdEntry.get()
+    try:
+        addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
+        print(addLawsuitQuery)
+        db_cursor.execute(addLawsuitQuery)
+        db_connection.commit()
+        lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
+    except Exception as e:
+        print(f"Error: {e}")
+        messagebox.showwarning("Format Error!","The input format is wrong.")
+
+addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
+addLawsuitButton.place(x=880,y=480)
+
+
+
 
 
 
