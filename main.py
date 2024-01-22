@@ -778,21 +778,27 @@ def addLawsuitButtonClick():
         messagebox.showwarning("Validation Error", "Invalid input format.")
         return
 
-    try:
-        addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
-        print(addLawsuitQuery)
-        db_cursor.execute(addLawsuitQuery)
-        db_connection.commit()
-        lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
-    except Exception as e:
-        print(f"Error: {e}")
-        messagebox.showwarning("Format Error!","The input format is wrong.")
+    lawsuitIdQuery = """SELECT lawsuit_id FROM Lawsuit"""
+    db_cursor.execute(lawsuitIdQuery)
+    lawsuitIds = db_cursor.fetchall()
+    lawsuitIdList = [i[0] for i in lawsuitIds]
+    if (lawsuitId in lawsuitIdList):
+        messagebox.showwarning("Validation Error","Lawsuit ID already exists in Lawsuit table.")
+        return
+
+    addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
+    db_cursor.execute(addLawsuitQuery)
+    db_connection.commit()
+    lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
+
+    lawsuitIDEntry.delete(0,END)
+    verdictEntry.delete(0,END)
+    courtDateEntry.delete(0,END)
+    judgeNameEntry.delete(0,END)
+    clientIdEntry.delete(0,END)
 
 addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
 addLawsuitButton.place(x=880,y=480)
-
-
-
 
 
 
