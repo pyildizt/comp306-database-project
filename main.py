@@ -2,8 +2,9 @@
 import customtkinter
 from tkinter import *
 from tkinter import ttk
-from tkinter.font import Font
 from tkinter import messagebox
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 # Import for database
@@ -15,7 +16,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="4567-bbbcomp", 
+  passwd="123678zulal", 
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -59,12 +60,13 @@ populate_table(db_connection, db_cursor, insert_staff, "./data/Staff.csv")
 #Create Administrator table
 db_cursor.execute("""CREATE TABLE IF NOT EXISTS Administrator (
                     admin_id CHAR(6),
+                    password INT,
                     PRIMARY KEY (admin_id),
                     FOREIGN KEY (admin_id) REFERENCES Staff(id))""")
 
 insert_administrators = (
-    "INSERT INTO Administrator(admin_id) "
-    "VALUES (%s)"
+    "INSERT INTO Administrator(admin_id,password) "
+    "VALUES (%s,%s)"
 )
 
 populate_table(db_connection, db_cursor, insert_administrators, "./data/Administrator.csv")
@@ -191,7 +193,44 @@ customtkinter.set_default_color_theme("blue")
 # Main application 
 main_app = customtkinter.CTk()
 main_app.title("Intellectual Property Firm System")
-main_app.geometry("1200x700")
+main_app.geometry("1300x700+70+0")
+main_app.resizable(width=None, height=None)
+
+def loginWindow():
+    login_window = customtkinter.CTkToplevel(main_app) 
+    login_window.title("Login")
+    login_window.geometry("500x300+500+300")
+
+    main_app.withdraw() #iconify()
+
+    frame = customtkinter.CTkFrame(master=login_window) 
+    frame.pack(pady=20,padx=40,fill='both',expand=True)
+
+    login_label1 = customtkinter.CTkLabel(master=frame, text="")
+    login_label1.pack(pady=10, padx=10)
+    
+    user_entry= customtkinter.CTkEntry(master=frame,placeholder_text="Username") 
+    user_entry.pack(pady=12,padx=10) 
+    
+    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*") 
+    user_pass.pack(pady=12,padx=10)
+
+    login_label2 = customtkinter.CTkLabel(master=frame, text="")
+
+    def login():
+        username = "admin"
+        password = "1234"
+        if user_entry.get() == username and user_pass.get() == password: 
+            main_app.deiconify()
+            login_window.destroy()
+        else:
+            login_label2.configure(text="Incorrect password. Try again.")
+
+    button = customtkinter.CTkButton(master=frame,text='Login',command=login) 
+    button.pack(pady=12,padx=10) 
+    login_label2.pack(pady=10, padx=10) 
+
+
 
 ### Tabview
 tabview = customtkinter.CTkTabview(master=main_app)
@@ -240,12 +279,7 @@ label.pack(pady=60, padx=10)
 
 
 ### A Treeview
-#df = pd.read_csv('./data/Lawyer.csv')
-#lawyers_columns = list(df.columns)
 
-
-#db_cursor.execute("SELECT * FROM Lawyer")
-#lawyers = db_cursor.fetchall()
 
 # for now i just wrote it insetad of taking from database
 table_columns = ("name","surname","id_no")
@@ -448,6 +482,48 @@ insert_button1.place(x=500, y=550)
 
 
 ##### CLIENTS TAB
+clients_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Clients")
+clients_label.pack(pady=10, padx=10)
+
+#Client Headers
+df = pd.read_csv('./data/Client.csv')
+client_columns = tuple(df.columns)
+print(client_columns)
+
+#Client Columns
+db_cursor.execute("SELECT * FROM Client")
+clients_from_database = db_cursor.fetchall()
+
+#Client Tree View
+client_tree = ttk.Treeview(master=tabview.tab("Clients"), columns=client_columns, show="headings", selectmode="browse") 
+client_tree.pack()
+
+client_tree.heading(client_columns[0], text="Client ID")
+client_tree.heading(client_columns[1], text="Name")
+client_tree.heading(client_columns[2], text="Surname")
+client_tree.heading(client_columns[3], text="Sex")
+client_tree.heading(client_columns[4], text="Age")
+client_tree.heading(client_columns[5], text="Phone No")
+client_tree.heading(client_columns[6], text="Email")
+client_tree.heading(client_columns[7], text="Address")
+client_tree.heading(client_columns[8], text="Birthdate")
+client_tree.heading(client_columns[9], text="State")
+
+for i in range(10):
+    if i == 0 or i == 3 or i == 4:
+        client_tree.column(column=i,width=60,stretch=False)
+    elif i == 5:
+        client_tree.column(column=i,width=115,stretch=False)
+    elif i == 6:
+        client_tree.column(column=i,width=200,stretch=False)
+    else:
+        client_tree.column(column=i,width=105,stretch=False)
+
+for i in clients_from_database:
+    client_tree.insert("", END, values=i)
+    
+
+
 
 
 
@@ -457,8 +533,120 @@ insert_button1.place(x=500, y=550)
 
 
 ##### DEPARTMENTS TAB
+department_label = customtkinter.CTkLabel(master=tabview.tab("Departments"), text="Departments")
+department_label.pack(pady=10, padx=10)
+
+#Department Headers
+df = pd.read_csv('./data/Department.csv')
+department_columns = tuple(df.columns)
+print(department_columns)
+
+#Department Columns
+db_cursor.execute("SELECT * FROM Department")
+departments = db_cursor.fetchall()
+
+#Department Tree View
+department_tree = ttk.Treeview(master=tabview.tab("Departments"), columns=department_columns, show="headings", selectmode="browse") 
+department_tree.pack()
+
+department_tree.heading(department_columns[0], text="Department ID")
+department_tree.heading(department_columns[1], text="Department Name")
+department_tree.heading(department_columns[2], text="Admin ID")
+department_tree.column(department_columns[1], minwidth=0, width=300)
+
+for i in departments:
+    department_tree.insert("", END, values=i)
+    
+
+#Insert Button for Department
+def insertDepartmentToDatabase():
+    dep_id = dep_id_input.get()
+    dep_name = dep_name_input.get()
+    adm_id = admin_id_input.get()
+
+    if not all([dep_id, dep_name, adm_id]):
+        messagebox.showwarning("Validation Error", "Please fill in all the fields.")
+        return
+
+    if not (dep_id.startswith("DEP") and len(dep_id) == 6 and adm_id.startswith("ADM") and len(adm_id) == 6):
+        print(dep_id.startswith("DEP"))
+        print(len(dep_id) == 6)
+        print(adm_id.startswith("ADM"))
+        print(len(adm_id) == 6)
+
+        messagebox.showwarning("Validation Error", "Invalid input format or length.")
+        return
+
+    department_tree.insert("", END, values=(dep_id, dep_name, adm_id))
+    db_cursor.execute("INSERT INTO Department (department_id, department_name, admin_id) VALUES (%s, %s, %s)",
+                      (dep_id, dep_name, adm_id))
+    db_connection.commit()
+
+    # Clear the entry widgets
+    dep_id_input.delete(0, END)
+    dep_name_input.delete(0, END)
+    admin_id_input.delete(0, END)
+
+
+# Entry widgets for adding a new department
+dep_id_label = customtkinter.CTkLabel(tabview.tab("Departments"), text="Department ID:")
+dep_name_label = customtkinter.CTkLabel(tabview.tab("Departments"), text="Department Name:")
+admin_id_label = customtkinter.CTkLabel(tabview.tab("Departments"), text="Admin ID:")
+
+dep_id_label.pack(side="top",padx=5, pady=9)
+dep_id_input = customtkinter.CTkEntry(tabview.tab("Departments"), placeholder_text="DEPXXX")
+dep_id_input.pack(padx=5, pady=5)
+
+dep_name_label.pack(padx=5, pady=4)
+dep_name_input = customtkinter.CTkEntry(tabview.tab("Departments"), placeholder_text="Department Name")
+dep_name_input.pack(padx=5, pady=5)
+
+admin_id_label.pack(padx=5, pady=4)
+admin_id_input = customtkinter.CTkEntry(tabview.tab("Departments"), placeholder_text= "ADMXXX")
+admin_id_input.pack(padx=5, pady=5)
+
+# Insert Button for Department
+insert_button = customtkinter.CTkButton(master=tabview.tab("Departments"), text="Add Department", command=insertDepartmentToDatabase)
+insert_button.pack(pady=10)
+
+#Show Department Details
+def showDepartmentLawyers():
+    selected_item = department_tree.selection()
+    if selected_item:
+        details = department_tree.item(selected_item, 'values')
+
+        details_window = customtkinter.CTkToplevel(main_app)
+        details_window.title("Details")
+        details_window.geometry("400x150+400+150")
+        
+        #Department Lawyers Title
+        header_label = customtkinter.CTkLabel(details_window, text=details[1] + " Department Lawyers", font=("Helvetica", 16, "bold"))
+        header_label.pack(padx=0, pady=5, anchor="w")
+
+        department_lawyers_query = db_cursor.execute("""SELECT S.fname, S.lname
+                                                FROM Department D, Staff S, Lawyer L
+                                                WHERE D.department_id = %s AND L.department_id = D.department_id AND S.id = L.lawyer_id
+                                                """, (details[0],))
+
+        db_cursor.execute(department_lawyers_query)
+        department_lawyers = db_cursor.fetchall()
+        department_lawyers = "\n".join([f"{fname} {lname} " for fname, lname in department_lawyers])
+
+        department_lawyer_label = customtkinter.CTkLabel(details_window, text=department_lawyers)
+        department_lawyer_label.pack(padx=0, pady=5, anchor="w")
+
+# Button to show details
+department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Department Lawyers", command=showDepartmentLawyers)
+department_details_button.place(relx=1, x=-50, rely=0, y=70, anchor="ne")
+
+#-----------------------------------------------------------------------
+# Canvas for the bar chart
+department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showDepartmentLawyers)
+department_details_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
+
 
 
 
 # Start the ui
+loginWindow()
 main_app.mainloop()
