@@ -329,8 +329,10 @@ def addLawsuitButtonClick():
         addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
         print(addLawsuitQuery)
         db_cursor.execute(addLawsuitQuery)
+        db_connection.commit()
         lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
-    except:
+    except Exception as e:
+        print(f"Error: {e}")
         messagebox.showwarning("Format Error!","The input format is wrong.")
 
 addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
