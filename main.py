@@ -12,6 +12,7 @@ import numpy as np
 import mysql.connector
 import csv
 import pandas as pd
+import re
 
 #CREATE DATABASE:
 db_connection = mysql.connector.connect(
@@ -203,33 +204,46 @@ def loginWindow():
     login_window.geometry("500x300+500+300")
 
     main_app.withdraw() #iconify()
-
     frame = customtkinter.CTkFrame(master=login_window) 
     frame.pack(pady=20,padx=40,fill='both',expand=True)
 
     login_label1 = customtkinter.CTkLabel(master=frame, text="")
     login_label1.pack(pady=10, padx=10)
     
-    user_entry= customtkinter.CTkEntry(master=frame,placeholder_text="Username") 
-    user_entry.pack(pady=12,padx=10) 
-    
-    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*") 
+    admin_id_query = db_cursor.execute("""SELECT admin_id FROM Administrator""")
+    admin_ids = db_cursor.fetchall() 
+    admin_ids_list = [i[0] for i in admin_ids]
+
+    admin_id_combobox = ttk.Combobox(master=frame, values=admin_ids_list, state="readonly", width = 30)
+    admin_id_combobox.set("Admin ID")
+    admin_id_combobox.pack(pady=12, padx=120)
+
+    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*", width=180) 
     user_pass.pack(pady=12,padx=10)
 
-    login_label2 = customtkinter.CTkLabel(master=frame, text="")
 
     def login():
-        username = "admin"
-        password = "1234"
-        if user_entry.get() == username and user_pass.get() == password: 
+        username = admin_id_combobox.get()  # Use the selected admin ID as the username
+        password = user_pass.get()
+
+        adm_password = db_cursor.execute("""SELECT password FROM Administrator WHERE Administrator.admin_id = %s""", (username,))
+        adm_password = db_cursor.fetchall()
+        adm_password = str(adm_password[0][0])
+
+        if password == adm_password: 
             main_app.deiconify()
             login_window.destroy()
+
+        elif password == "":
+            messagebox.showwarning("Password Error", "Admin password is null!")
+
         else:
-            login_label2.configure(text="Incorrect password. Try again.")
+            messagebox.showwarning("Password Error", "Admin password is wrong!")
+            return
+            
 
     button = customtkinter.CTkButton(master=frame,text='Login',command=login) 
     button.pack(pady=12,padx=10) 
-    login_label2.pack(pady=10, padx=10) 
 
 
 
