@@ -359,6 +359,8 @@ for i in clients_from_database:
 
 
 
+
+
 ##### LAWSUITS TAB
 
 
@@ -369,5 +371,5 @@ for i in clients_from_database:
 
 
 # Start the ui
-#loginWindow()
+loginWindow()
 main_app.mainloop()
