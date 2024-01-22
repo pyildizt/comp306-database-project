@@ -21,7 +21,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468",
+  passwd="z1x?1zKucs",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -717,9 +717,33 @@ for lawsuit in allLawsuits:
     lawsuitTree.insert("",END,values=lawsuit)
 
 def showLawsuitDetails():
+    selectedLawsuit = lawsuitTree.selection()
+    if selectedLawsuit:
+        lawsuitAttributes = lawsuitTree.item(selectedLawsuit, 'values')
+        clientDetailsWindow = customtkinter.CTkToplevel(main_app)
+        clientDetailsWindow.title("Client Details")
+        clientDetailsWindow.geometry("400x150+400+150")
+
+        # Department Lawyers Title
+        header = customtkinter.CTkLabel(clientDetailsWindow, text=lawsuitAttributes[0]+ " Client Details",font=("Helvetica", 16, "bold"))
+        header.pack(padx=10, pady=10, anchor="w")
+
+        clientDetailsQuery = """SELECT C.fname, C.lname, C.sex, C.age, C.email
+                                FROM Client C WHERE C.client_id = '{}'""".format(lawsuitAttributes[4])
+
+        db_cursor.execute(clientDetailsQuery)
+        clientDetailsList = db_cursor.fetchall()
+        clientDetails = "\n".join([f"{fname} {lname} {sex} {age} {email} " for fname, lname, sex, age, email in clientDetailsList])
+        department_lawyer_label = customtkinter.CTkLabel(clientDetailsWindow, text=clientDetails)
+        department_lawyer_label.pack(padx=10, pady=10, anchor="w")
+
     return
 
-showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details",command=showLawsuitDetails)
+
+
+
+
+showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Client Details",command=showLawsuitDetails)
 showLawsuitDetailsButton.place(x=120,y=300)
 
 def removeLawsuit():
@@ -733,7 +757,11 @@ def removeLawsuit():
 removeLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Remove Lawsuit",command=removeLawsuit)
 removeLawsuitButton.place(x=350,y=300)
 
+def verdictStatisticsCommand():
+    return
 
+verdictStatisticsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Verdict Statistics",command=verdictStatisticsCommand)
+verdictStatisticsButton.place(x=235,y=400)
 
 lawsuitIDLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Lawsuit ID:")
 lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="LWSXXX")
