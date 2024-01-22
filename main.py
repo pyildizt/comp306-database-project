@@ -558,7 +558,11 @@ def insertClientToDatabase():
         messagebox.showwarning("Validation Error", "Invalid input format.")
         return
     
-    if False: ##CHECK IF CLIENT ID IS ALREADY IN DATABASE IN HERE!!!!!!!
+    client_id_query = db_cursor.execute("""SELECT client_id FROM Client""")
+    client_ids = db_cursor.fetchall() 
+    client_ids_list = [i[0] for i in client_ids]
+
+    if (client_id in client_ids_list):
         messagebox.showwarning("Validation Error", "Client ID already exists in Client table.")
         return
 
@@ -591,8 +595,8 @@ def removeClientFromDatabase():
         # also delete from treeview
         client_tree.delete(client_tree.selection())
 
-    else:
-        messagebox.showwarning("Selection Error", "Please select client to remove.")
+    #else:
+    #    messagebox.showwarning("Selection Error", "Please select client to remove.")
 
 
 remove_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Remove Client", command=removeClientFromDatabase).place(x=950, y=300)
@@ -601,6 +605,38 @@ def showClientDetails():
     return
 
 show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show Details", command=showClientDetails).place(x=950, y=350)
+
+def sortClientsByID():
+    db_cursor.execute("SELECT * FROM Client ORDER BY client_id ASC")
+    sorted_clients = db_cursor.fetchall()
+
+    #Delete old items
+    old_items = client_tree.get_children()
+    for item in old_items:
+        client_tree.delete(item)
+
+    #Insert sorted items from query
+    for i in sorted_clients:
+        client_tree.insert("", END, values=i)
+
+sort_clients_by_id_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Sort by ID", command=sortClientsByID).place(x=950, y=400)
+
+def sortClientsByName():
+    db_cursor.execute("SELECT * FROM Client ORDER BY fname ASC")
+    sorted_clients = db_cursor.fetchall()
+
+    #Delete old items
+    old_items = client_tree.get_children()
+    for item in old_items:
+        client_tree.delete(item)
+
+    #Insert sorted items from query
+    for i in sorted_clients:
+        client_tree.insert("", END, values=i)
+
+
+sort_clients_by_name_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Sort by Name", command=sortClientsByName).place(x=950, y=450)
+
 
 ##### LAWSUITS TAB
 
