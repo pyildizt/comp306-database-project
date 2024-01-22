@@ -22,7 +22,7 @@ import re
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468",
+  passwd="z1x?1zKucs",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -617,6 +617,7 @@ def showClientDetails():
 show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show Details", command=showClientDetails).place(x=950, y=350)
 
 ##### LAWSUITS TAB
+
 lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="Lawsuits")
 lawsuitTitle.pack(padx=10,pady=10)
 lawsuitColumns = ["lawsuit_id","verdict","court_date","judge_name","client_id"]
@@ -634,23 +635,49 @@ allLawsuits = db_cursor.fetchall()
 for lawsuit in allLawsuits:
     lawsuitTree.insert("",END,values=lawsuit)
 
-showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details")
-showLawsuitDetailsButton.place(x=180,y=300)
+def showLawsuitDetails():
+    return
 
-lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Lawsuit ID")
+showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details",command=showLawsuitDetails)
+showLawsuitDetailsButton.place(x=120,y=300)
+
+def removeLawsuit():
+    selectedLawsuit = lawsuitTree.item(lawsuitTree.focus(),"values")
+    removeLawsuitQuery = """DELETE FROM Lawsuit WHERE lawsuit_id = '{0}'""".format(selectedLawsuit[0])
+    db_cursor.execute(removeLawsuitQuery)
+    db_connection.commit()
+    lawsuitTree.delete(lawsuitTree.selection())
+    return
+
+removeLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Remove Lawsuit",command=removeLawsuit)
+removeLawsuitButton.place(x=350,y=300)
+
+
+
+lawsuitIDLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Lawsuit ID:")
+lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="LWSXXX")
 lawsuitIDEntry.place(x=880,y=300)
+lawsuitIDLabel.place(x=780,y=300)
 
-verdictEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Verdict")
+verdictLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Verdict:")
+verdictEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Guilty/Free")
 verdictEntry.place(x=880,y=330)
+verdictLabel.place(x=780,y=330)
 
-courtDateEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Court Date")
+courtDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Court Date:")
+courtDateEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
 courtDateEntry.place(x=880,y=360)
+courtDateLabel.place(x=780,y=360)
 
-judgeNameEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Judge Name")
+judgeNameLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Judge Name:")
+judgeNameEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Judge XXXX")
 judgeNameEntry.place(x=880,y=390)
+judgeNameLabel.place(x=780,y=390)
 
-clientIdEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Client ID")
+clientIdLabel = customtkinter.CTkLabel(master= tabview.tab("Lawsuits"),text="Client ID:")
+clientIdEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="CLIXX")
 clientIdEntry.place(x=880,y=420)
+clientIdLabel.place(x=780,y=420)
 
 def addLawsuitButtonClick():
     lawsuitId = lawsuitIDEntry.get()
