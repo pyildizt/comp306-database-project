@@ -2,6 +2,7 @@
 import customtkinter
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 
 # Import for database
 import mysql.connector
@@ -302,6 +303,39 @@ for lawsuit in allLawsuits:
 
 showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details")
 showLawsuitDetailsButton.place(x=180,y=300)
+
+lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Lawsuit ID")
+lawsuitIDEntry.place(x=880,y=300)
+
+verdictEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Verdict")
+verdictEntry.place(x=880,y=330)
+
+courtDateEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Court Date")
+courtDateEntry.place(x=880,y=360)
+
+judgeNameEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Judge Name")
+judgeNameEntry.place(x=880,y=390)
+
+clientIdEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Client ID")
+clientIdEntry.place(x=880,y=420)
+
+def addLawsuitButtonClick():
+    lawsuitId = lawsuitIDEntry.get()
+    verdict = verdictEntry.get()
+    courtDate = courtDateEntry.get()
+    judgeName = judgeNameEntry.get()
+    clientId = clientIdEntry.get()
+    try:
+        addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
+        print(addLawsuitQuery)
+        db_cursor.execute(addLawsuitQuery)
+        lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
+    except:
+        messagebox.showwarning("Format Error!","The input format is wrong.")
+
+addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
+addLawsuitButton.place(x=880,y=480)
+
 
 
 
