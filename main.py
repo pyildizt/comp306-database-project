@@ -21,7 +21,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="4567-bbbcomp", 
+  passwd="123678zulal", 
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -800,9 +800,33 @@ addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text
 addLawsuitButton.place(x=880,y=480)
 
 
+def filter_lawsuits_verdict(event):
+    selected_verdict = lawsuit_combobox.get()
+    lawsuitTree.delete(*lawsuitTree.get_children())
 
+    all_lawsuits = db_cursor.execute("""SELECT * FROM Lawsuit""")
+    all_lawsuits = db_cursor.fetchall()
 
+    if (selected_verdict == "All"):
+        for lawsuit in all_lawsuits:
+            lawsuitTree.insert("", END, values=lawsuit)        
 
+    filter_verdict = db_cursor.execute("""SELECT *
+                                                 FROM Lawsuit L
+                                                 WHERE verdict = %s
+                                                """, (selected_verdict,))
+
+    filter_verdict_list = db_cursor.fetchall()
+    for lawsuit in filter_verdict_list:
+        lawsuitTree.insert("", END, values=lawsuit)
+
+lawsuits_list = ["All","Guilty","Free"]
+lawsuit_combobox = ttk.Combobox(master=tabview.tab("Lawsuits"), values=lawsuits_list, state="readonly", width = 30)
+lawsuit_combobox.set("Verdict")
+lawsuit_combobox.place(x=700, y=20)
+lawsuit_combobox.bind("<<ComboboxSelected>>", filter_lawsuits_verdict)
+
+                                            
 
 
 ##### DEPARTMENTS TAB
@@ -987,5 +1011,5 @@ AND LWS2.verdict = "Guilty")
 
 
 # Start the ui
-loginWindow()
+#loginWindow()
 main_app.mainloop()
