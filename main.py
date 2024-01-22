@@ -738,9 +738,33 @@ for lawsuit in allLawsuits:
     lawsuitTree.insert("",END,values=lawsuit)
 
 def showLawsuitDetails():
+    selectedLawsuit = lawsuitTree.selection()
+    if selectedLawsuit:
+        lawsuitAttributes = lawsuitTree.item(selectedLawsuit, 'values')
+        clientDetailsWindow = customtkinter.CTkToplevel(main_app)
+        clientDetailsWindow.title("Client Details")
+        clientDetailsWindow.geometry("400x150+400+150")
+
+        # Department Lawyers Title
+        header = customtkinter.CTkLabel(clientDetailsWindow, text=lawsuitAttributes[0]+ " Client Details",font=("Helvetica", 16, "bold"))
+        header.pack(padx=10, pady=10, anchor="w")
+
+        clientDetailsQuery = """SELECT C.fname, C.lname, C.sex, C.age, C.email
+                                FROM Client C WHERE C.client_id = '{}'""".format(lawsuitAttributes[4])
+
+        db_cursor.execute(clientDetailsQuery)
+        clientDetailsList = db_cursor.fetchall()
+        clientDetails = "\n".join([f"{fname} {lname} {sex} {age} {email} " for fname, lname, sex, age, email in clientDetailsList])
+        department_lawyer_label = customtkinter.CTkLabel(clientDetailsWindow, text=clientDetails)
+        department_lawyer_label.pack(padx=10, pady=10, anchor="w")
+
     return
 
-showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details",command=showLawsuitDetails)
+
+
+
+
+showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Client Details",command=showLawsuitDetails)
 showLawsuitDetailsButton.place(x=120,y=300)
 
 def removeLawsuit():
@@ -754,7 +778,66 @@ def removeLawsuit():
 removeLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Remove Lawsuit",command=removeLawsuit)
 removeLawsuitButton.place(x=350,y=300)
 
+def verdictStatisticsCommand():
 
+    verdictStaticsQuery = """SELECT L.verdict, COUNT(*)
+           FROM Lawsuit L, Client C
+           WHERE L.client_id = C.client_id""" + \
+           (""" AND C.sex = '{}'""".format(clientGenderComboBox.get()[0]) if clientGenderComboBox.get() != "No Choice" else "") + \
+           (""" AND L.court_date > '{}'""".format(fromDateEntry.get()) if fromDateEntry.get() != "" else "") + \
+           (""" AND L.judge_name LIKE '{}'""".format(whichJudgeComboBox.get()) if whichJudgeComboBox.get() != "No Choice" else "") + \
+           """ GROUP BY L.verdict ORDER BY COUNT(*) ASC"""
+    print(verdictStaticsQuery)
+    db_cursor.execute(verdictStaticsQuery)
+    verdictCountList = db_cursor.fetchall()
+    verdicts = [i[0] for i in verdictCountList]
+    lawsuitSums = [i[1] for i in verdictCountList]
+
+    fig, ax = plt.subplots()
+    ax.pie(lawsuitSums, labels=verdicts, colors=["#B0DAFF", "#19A7CE", "#146C94"], autopct='%.2f%%', startangle=90)
+    plt.title("Verdict Statistics")
+    ax.axis('equal')
+
+
+    verdictStatisticsWindow = customtkinter.CTkToplevel(main_app)
+    verdictStatisticsWindow.title("Verdict Statistics")
+    verdictStatisticsWindow.geometry("700x550+300+50")
+
+    canvas = FigureCanvasTkAgg(fig, master=verdictStatisticsWindow)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        verdictStatisticsWindow.destroy()
+
+    verdictStatisticsWindow.protocol("WM_DELETE_WINDOW", on_close)
+    verdictStatisticsWindow.mainloop()
+
+    return
+
+clientGenderComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=("No Choice","Male","Female"))
+clientGenderLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Gender:")
+fromDateEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
+fromDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="From Which Date:")
+db_cursor.execute("SELECT DISTINCT judge_name FROM Lawsuit")
+JudgeListDB = db_cursor.fetchall()
+
+JudgeList = []
+for jname in JudgeListDB:
+    JudgeList.append(jname[0])
+JudgeList.insert(0,"No Choice")
+whichJudgeComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=JudgeList)
+whichJudgeLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Sort By Judge:")
+verdictStatisticsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Verdict Statistics",command=verdictStatisticsCommand)
+
+
+clientGenderComboBox.place(x=160,y=400)
+clientGenderLabel.place(x=20,y=400)
+fromDateEntry.place(x=160,y=430)
+fromDateLabel.place(x=20,y=430)
+whichJudgeComboBox.place(x=160,y=460)
+whichJudgeLabel.place(x=20,y=460)
+verdictStatisticsButton.place(x=350,y=430)
 
 lawsuitIDLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Lawsuit ID:")
 lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="LWSXXX")
@@ -799,19 +882,28 @@ def addLawsuitButtonClick():
         messagebox.showwarning("Validation Error", "Invalid input format.")
         return
 
-    try:
-        addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
-        print(addLawsuitQuery)
-        db_cursor.execute(addLawsuitQuery)
-        db_connection.commit()
-        lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
-    except Exception as e:
-        print(f"Error: {e}")
-        messagebox.showwarning("Format Error!","The input format is wrong.")
+    lawsuitIdQuery = """SELECT lawsuit_id FROM Lawsuit"""
+    db_cursor.execute(lawsuitIdQuery)
+    lawsuitIds = db_cursor.fetchall()
+    lawsuitIdList = [i[0] for i in lawsuitIds]
+    if (lawsuitId in lawsuitIdList):
+        messagebox.showwarning("Validation Error","Lawsuit ID already exists in Lawsuit table.")
+        return
+
+    addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
+    db_cursor.execute(addLawsuitQuery)
+    db_connection.commit()
+    lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
+
+
+    lawsuitIDEntry.delete(0,END)
+    verdictEntry.delete(0,END)
+    courtDateEntry.delete(0,END)
+    judgeNameEntry.delete(0,END)
+    clientIdEntry.delete(0,END)
 
 addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
 addLawsuitButton.place(x=880,y=480)
-
 
 def filter_lawsuits_verdict(event):
     selected_verdict = lawsuit_combobox.get()
@@ -828,6 +920,7 @@ def filter_lawsuits_verdict(event):
                                                  FROM Lawsuit L
                                                  WHERE verdict = %s
                                                 """, (selected_verdict,))
+
 
     filter_verdict_list = db_cursor.fetchall()
     for lawsuit in filter_verdict_list:
