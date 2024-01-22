@@ -6,7 +6,7 @@ from tkinter import ttk
 # Import for database
 import mysql.connector
 import csv
-#import pandas as pd
+import pandas as pd
 
 #CREATE DATABASE:
 db_connection = mysql.connector.connect(
@@ -188,12 +188,13 @@ customtkinter.set_default_color_theme("blue")
 # Main application 
 main_app = customtkinter.CTk()
 main_app.title("Intellectual Property Firm System")
-main_app.geometry("1200x700")
+main_app.geometry("1300x700+70+0")
+main_app.resizable(width=None, height=None)
 
 def loginWindow():
     login_window = customtkinter.CTkToplevel(main_app) 
     login_window.title("Login")
-    login_window.geometry("500x300")
+    login_window.geometry("500x300+500+300")
 
     main_app.withdraw() #iconify()
 
@@ -315,6 +316,46 @@ remove_button.place(x=700,y=500)
 
 
 ##### CLIENTS TAB
+clients_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Clients")
+clients_label.pack(pady=10, padx=10)
+
+#Client Headers
+df = pd.read_csv('./data/Client.csv')
+client_columns = tuple(df.columns)
+print(client_columns)
+
+#Client Columns
+db_cursor.execute("SELECT * FROM Client")
+clients_from_database = db_cursor.fetchall()
+
+#Client Tree View
+client_tree = ttk.Treeview(master=tabview.tab("Clients"), columns=client_columns, show="headings", selectmode="browse") 
+client_tree.pack()
+
+client_tree.heading(client_columns[0], text="Client ID")
+client_tree.heading(client_columns[1], text="Name")
+client_tree.heading(client_columns[2], text="Surname")
+client_tree.heading(client_columns[3], text="Sex")
+client_tree.heading(client_columns[4], text="Age")
+client_tree.heading(client_columns[5], text="Phone No")
+client_tree.heading(client_columns[6], text="Email")
+client_tree.heading(client_columns[7], text="Address")
+client_tree.heading(client_columns[8], text="Birthdate")
+client_tree.heading(client_columns[9], text="State")
+
+for i in range(10):
+    if i == 0 or i == 3 or i == 4:
+        client_tree.column(column=i,width=60,stretch=False)
+    elif i == 5:
+        client_tree.column(column=i,width=115,stretch=False)
+    elif i == 6:
+        client_tree.column(column=i,width=200,stretch=False)
+    else:
+        client_tree.column(column=i,width=105,stretch=False)
+
+for i in clients_from_database:
+    client_tree.insert("", END, values=i)
+    
 
 
 
@@ -328,5 +369,5 @@ remove_button.place(x=700,y=500)
 
 
 # Start the ui
-loginWindow()
+#loginWindow()
 main_app.mainloop()
