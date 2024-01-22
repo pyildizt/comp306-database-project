@@ -21,7 +21,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468",
+  passwd="123678zulal", 
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -293,6 +293,7 @@ for lawyer in lawyers_data:
     lawyers_tree.insert("", END, values=lawyer)
 
 
+
 def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
@@ -306,16 +307,22 @@ def removeLawyerFromDatabase():
 remove_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Remove Lawyer", command=removeLawyerFromDatabase)
 remove_button.place(x=900,y=90)
 
-
 def sort_lawyers_by_name():
-    valid_items = [item for item in lawyers_tree.get_children() if lawyers_tree.item(item, 'values')]
-    sorted_items = sorted(valid_items, key=lambda x: lawyers_tree.item(x, 'values')[0])
+    print("sort lawyers by fname")
+    db_cursor.execute("SELECT S.fname, S.lname, S.id FROM  Lawyer L JOIN Staff S ON L.lawyer_id = S.id  ORDER BY fname ASC")
+    sorted_lawyer = db_cursor.fetchall()
 
-    for index, item in enumerate(sorted_items):
-        lawyers_tree.move(item, "", index)
+    #Delete old items
+    old_items = lawyers_tree.get_children()
+    for item in old_items:
+        lawyers_tree.delete(item)
 
-sort_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Sort by Name", command=sort_lawyers_by_name)
-sort_button.place(x=900, y=140)
+    #Insert sorted items from query
+    for i in sorted_lawyer:
+        lawyers_tree.insert("", END, values=i)
+
+sorted_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Sort by Name", command=sort_lawyers_by_name)
+sorted_lawyer_button.place(x=900, y=140)
 
 def show_lawyer_info():
     selected_item = lawyers_tree.selection()
@@ -413,6 +420,8 @@ search_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Sea
 search_button.place(x=900, y=10)
 search_entry = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Enter lawyer's name")
 search_entry.place(x=750, y=10)
+
+
 
 
 ##### yeni eklediğimi silemiyorum ? ##########
@@ -804,9 +813,33 @@ addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text
 addLawsuitButton.place(x=880,y=480)
 
 
+def filter_lawsuits_verdict(event):
+    selected_verdict = lawsuit_combobox.get()
+    lawsuitTree.delete(*lawsuitTree.get_children())
 
+    all_lawsuits = db_cursor.execute("""SELECT * FROM Lawsuit""")
+    all_lawsuits = db_cursor.fetchall()
 
+    if (selected_verdict == "All"):
+        for lawsuit in all_lawsuits:
+            lawsuitTree.insert("", END, values=lawsuit)        
 
+    filter_verdict = db_cursor.execute("""SELECT *
+                                                 FROM Lawsuit L
+                                                 WHERE verdict = %s
+                                                """, (selected_verdict,))
+
+    filter_verdict_list = db_cursor.fetchall()
+    for lawsuit in filter_verdict_list:
+        lawsuitTree.insert("", END, values=lawsuit)
+
+lawsuits_list = ["All","Guilty","Free"]
+lawsuit_combobox = ttk.Combobox(master=tabview.tab("Lawsuits"), values=lawsuits_list, state="readonly", width = 30)
+lawsuit_combobox.set("Verdict")
+lawsuit_combobox.place(x=700, y=20)
+lawsuit_combobox.bind("<<ComboboxSelected>>", filter_lawsuits_verdict)
+
+                                            
 
 
 ##### DEPARTMENTS TAB
