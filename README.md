@@ -2,8 +2,8 @@
 
 #### Group Members:
 
+- Mehmet Oğuz Alpkan
 - Saliha Zülal Demirtaş
 - Perihan Yıldız Topal
-- Mehmet Oğuz Alpkan
 - Beyza Türkmen
 - Alper Şahin
