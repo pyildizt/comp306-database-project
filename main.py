@@ -2,8 +2,12 @@
 import customtkinter
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 
-# Import for database
+# Import for checking inputs in UI (regular expressions)
+import re
+
+# Imports for database
 import mysql.connector
 import csv
 import pandas as pd
@@ -130,7 +134,7 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawsuit (
                         judge_name VARCHAR(50),
                         client_id CHAR(6),
                         PRIMARY KEY (lawsuit_id),
-                        FOREIGN KEY (client_id) REFERENCES Client(client_id)
+                        FOREIGN KEY (client_id) REFERENCES Client(client_id) ON DELETE CASCADE
                     )""")
 
 insert_lawsuits = (
@@ -147,8 +151,8 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Represents (
                         lawsuit_id CHAR(6),
                         fee INT,
                         PRIMARY KEY (lawyer_id, lawsuit_id),
-                        FOREIGN KEY (lawyer_id) REFERENCES Lawyer(lawyer_id),
-                        FOREIGN KEY (lawsuit_id) REFERENCES Lawsuit(lawsuit_id)
+                        FOREIGN KEY (lawyer_id) REFERENCES Lawyer(lawyer_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lawsuit_id) REFERENCES Lawsuit(lawsuit_id) ON DELETE CASCADE
                     )""")
 
 insert_represents = (
@@ -167,8 +171,8 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Counsels (
                         fee INT,
                         date DATE,
                         PRIMARY KEY(lawyer_id, client_id),
-                        FOREIGN KEY(lawyer_id) REFERENCES Lawyer(lawyer_id),
-                        FOREIGN KEY(client_id) REFERENCES Client(client_id)
+                        FOREIGN KEY(lawyer_id) REFERENCES Lawyer(lawyer_id) ON DELETE CASCADE,
+                        FOREIGN KEY(client_id) REFERENCES Client(client_id) ON DELETE CASCADE
                         )""")
 
 # Insert into Counsels table
@@ -357,48 +361,126 @@ for i in clients_from_database:
     client_tree.insert("", END, values=i)
     
 
-# Entry widgets for adding a new client
-#client_id,fname,lname,sex,age,phone_number,email,address,bdate,state 
+## Entry widgets for adding a new client
+# Label and Entry for Client ID
+client_id_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Client ID:").place(x=120, y=300)
+client_id_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="CLIXX", width=100)
+client_id_input.place(x=120, y=330)
+
+# Label and Entry for First Name
+client_fname_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Name:").place(x=270, y=300)
+client_fname_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_fname_input.place(x=270, y=330)
+
+# Label and Entry for Last Name
+client_lname_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Surname:").place(x=420, y=300)
+client_lname_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_lname_input.place(x=420, y=330)
+
+# Label and Entry for Sex
+client_sex_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Sex:").place(x=570, y=300)
+client_sex_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="F or M", width=100)
+client_sex_input.place(x=570, y=330)
+
+# Label and Entry for Age
+client_age_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Age:").place(x=720, y=300)
+client_age_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_age_input.place(x=720, y=330)
+
+# Label and Entry for Phone Number
+client_phone_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Phone Number:").place(x=120, y=380)
+client_phone_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="___-___-____", width=100)
+client_phone_input.place(x=120, y=410)
+
+# Label and Entry for Email
+client_email_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Email:").place(x=270, y=380)
+client_email_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="_@email.com", width=100)
+client_email_input.place(x=270, y=410)
+
+# Label and Entry for Address
+client_address_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Address:").place(x=420, y=380)
+client_address_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_address_input.place(x=420, y=410)
+
+# Label and Entry for Birthdate
+client_bdate_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Birthdate:").place(x=570, y=380)
+client_bdate_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="yyyy-mm-dd", width=100)
+client_bdate_input.place(x=570, y=410)
+
+# Label and Entry for State
+client_state_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="State:").place(x=720, y=380)
+client_state_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_state_input.place(x=720, y=410)
+
+# Insert Client Button
+def insertClientToDatabase():
+    client_id = client_id_input.get()
+    client_fname = client_fname_input.get()
+    client_lname = client_lname_input.get()
+    client_sex = client_sex_input.get()
+    client_age = client_age_input.get()
+    client_phone = client_phone_input.get()
+    client_email = client_email_input.get()
+    client_address = client_address_input.get()
+    client_bdate = client_bdate_input.get()
+    client_state = client_state_input.get()
+
+    if not all([client_id, client_fname, client_lname, client_sex, client_age, client_phone, client_email, client_address, client_bdate, client_state]):
+        messagebox.showwarning("Validation Error", "Please fill in all the fields.")
+        return
+
+    if not(bool(re.match(r'^CLI\d{2}$', client_id)) and 
+           bool(re.match(r'^(F|M)$', client_sex)) and 
+           bool(re.match(r'^\d+$', client_age)) and 
+           bool(re.match(r'^\d{3}-\d{3}-\d{4}$', client_phone)) and 
+           bool(re.match(r'^.+@email\.com$', client_email)) and 
+           bool(re.match(r'^\d{4}-\d{2}-\d{2}$', client_bdate))):
+        messagebox.showwarning("Validation Error", "Invalid input format.")
+        return
     
-client_add_client_labels_frame = Frame(master=tabview.tab("Clients"),background="black").pack(side="top", fill="x", expand=True)
-client_add_client_entries_frame = Frame(master=tabview.tab("Clients"),background="blue").pack(side="top", fill="x", expand=True)
-client_other_buttons_frame = Frame(master=tabview.tab("Clients"),background="green").pack(side="bottom", fill="both", expand=True)
+    if False: ##CHECK IF CLIENT ID IS ALREADY IN DATABASE IN HERE!!!!!!!
+        messagebox.showwarning("Validation Error", "Client ID already exists in Client table.")
+        return
 
-client_id_label = customtkinter.CTkLabel(client_add_client_labels_frame, text="Client ID:").pack(side="left") #grid(row=0,column=0) #place(x=50,y=300)
-client_id_input = customtkinter.CTkEntry(client_add_client_entries_frame, placeholder_text="CLIXX", width=60).pack(side="left") #grid(row=1, column=0) #place(x=50, y=330)
+    client_tree.insert("", END, values=(client_id, client_fname, client_lname, client_sex, client_age, client_phone, client_email, client_address, client_bdate, client_state))
+    db_cursor.execute("INSERT INTO Client (client_id,fname,lname,sex,age,phone_number,email,address,bdate,state) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                      (client_id, client_fname, client_lname, client_sex, client_age, client_phone, client_email, client_address, client_bdate, client_state))
+    db_connection.commit()
 
-#client_fname_label = customtkinter.CTkLabel(client_add_client_frame, text="Name:").grid(row=0,column=1) #place(x=200,y=300)
-#client_fname_input = customtkinter.CTkEntry(client_add_client_frame, placeholder_text="").grid(row=1,column=1) #place(x=200, y=330)
+    # Clear the entry widgets
+    client_id_input.delete(0, END)
+    client_fname_input.delete(0, END)
+    client_lname_input.delete(0, END)
+    client_sex_input.delete(0, END)
+    client_age_input.delete(0, END)
+    client_phone_input.delete(0, END)
+    client_email_input.delete(0, END)
+    client_address_input.delete(0, END)
+    client_bdate_input.delete(0, END)
+    client_state_input.delete(0, END)
+
+insert_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Add Client", width=100, command=insertClientToDatabase).place(x=420, y=470)
+
+# Remove Client Button
+def removeClientFromDatabase():
+    if client_tree.selection() != None: 
+        selectedItemValues = client_tree.item(client_tree.focus()).get('values')
+        db_cursor.execute("DELETE FROM Client WHERE client_id = \"" + str(selectedItemValues[0]) + "\"")
+        db_connection.commit()
+
+        # also delete from treeview
+        client_tree.delete(client_tree.selection())
+
+    else:
+        messagebox.showwarning("Selection Error", "Please select client to remove.")
 
 
-def insertDepartmentToDatabase():
+remove_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Remove Client", command=removeClientFromDatabase).place(x=950, y=300)
+
+def showClientDetails():
     return
 
-# Insert Button for Department
-#insert_button = customtkinter.CTkButton(master=tabview.tab("Departments"), text="Add Department", command=insertDepartmentToDatabase)
-#insert_button.pack(pady=10)
-
-
-def createWidgets(self):
-    #topFrame = Frame(self)
-    buttonFrame = Frame(self)
-    bottomFrame = Frame(self)
-
-    #topFrame.pack(side="top", fill="both", expand=True)
-    buttonFrame.pack(side="top", fill="x")
-    bottomFrame.pack(side="bottom", fill="both", expand=True)
-
-    #listBox = Listbox(topFrame, width=30)
-    #listBox.pack(side="top", fill="both", expand=True)
-
-    Button(buttonFrame, text="Add").pack(side="left")
-    Button(buttonFrame, text="Remove").pack(side="left")
-    Button(buttonFrame, text="Edit").pack(side="left")
-
-    textBox = Text(bottomFrame, height=10, width=30)
-    textBox.pack(fill="both", expand=True)
-
-#createWidgets(tabview.tab("Clients"))
+show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show Details", command=showClientDetails).place(x=950, y=350)
 
 ##### LAWSUITS TAB
 
