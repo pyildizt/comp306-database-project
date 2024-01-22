@@ -773,7 +773,7 @@ def addLawsuitButtonClick():
 
     if not(bool(re.match(r'^LWS\d{3}$', lawsuitId)) and 
            bool(re.match(r'^(Free|Guilty)$', verdict)) and 
-           bool(re.match(r'^\d{3}-\d{3}-\d{4}$', courtDate)) and  
+           bool(re.match(r'^\d{4}-\d{2}-\d{2}$', courtDate)) and  
            bool(re.match(r'^CLI\d{2}$', clientId))):
         messagebox.showwarning("Validation Error", "Invalid input format.")
         return
