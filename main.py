@@ -5,6 +5,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
 
 
 # Import for database
@@ -569,12 +570,23 @@ def insertDepartmentToDatabase():
         return
 
     if not (dep_id.startswith("DEP") and len(dep_id) == 6 and adm_id.startswith("ADM") and len(adm_id) == 6):
-        print(dep_id.startswith("DEP"))
-        print(len(dep_id) == 6)
-        print(adm_id.startswith("ADM"))
-        print(len(adm_id) == 6)
-
         messagebox.showwarning("Validation Error", "Invalid input format or length.")
+        return
+
+    admin_id_query = db_cursor.execute("""SELECT admin_id FROM Administrator""")
+    admin_ids = db_cursor.fetchall() 
+    admin_ids_list = [i[0] for i in admin_ids]
+
+    dep_id_query = db_cursor.execute("""SELECT department_id FROM Department""")
+    dep_ids = db_cursor.fetchall() 
+    dep_ids_list = [i[0] for i in dep_ids]
+
+    if (dep_id in dep_ids_list):
+        messagebox.showwarning("Validation Error", "This Department already exists!")
+        return
+
+    if (adm_id not in admin_ids_list):
+        messagebox.showwarning("Validation Error", "Assign an existing Admin!")
         return
 
     department_tree.insert("", END, values=(dep_id, dep_name, adm_id))
@@ -623,14 +635,15 @@ def showDepartmentLawyers():
         header_label = customtkinter.CTkLabel(details_window, text=details[1] + " Department Lawyers", font=("Helvetica", 16, "bold"))
         header_label.pack(padx=0, pady=5, anchor="w")
 
-        department_lawyers_query = db_cursor.execute("""SELECT S.fname, S.lname
+        department_lawyers_query = """SELECT S.fname, S.lname
                                                 FROM Department D, Staff S, Lawyer L
                                                 WHERE D.department_id = %s AND L.department_id = D.department_id AND S.id = L.lawyer_id
-                                                """, (details[0],))
+                                                """
 
-        db_cursor.execute(department_lawyers_query)
+        db_cursor.execute(department_lawyers_query, (details[0],))
         department_lawyers = db_cursor.fetchall()
         department_lawyers = "\n".join([f"{fname} {lname} " for fname, lname in department_lawyers])
+        print(department_lawyers)
 
         department_lawyer_label = customtkinter.CTkLabel(details_window, text=department_lawyers)
         department_lawyer_label.pack(padx=0, pady=5, anchor="w")
@@ -641,8 +654,46 @@ department_details_button.place(relx=1, x=-50, rely=0, y=70, anchor="ne")
 
 #-----------------------------------------------------------------------
 # Canvas for the bar chart
-department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showDepartmentLawyers)
-department_details_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
+def showWinningRate():
+
+    winning_rate_window = customtkinter.CTkToplevel(main_app)
+    winning_rate_window.title("Winning Rate Statistics")
+    winning_rate_window.geometry("700x550")
+
+    winning_rate_query = """SELECT D.department_id, AVG(L.winning_rate)
+                            FROM Department D, Staff S, Lawyer L
+                            WHERE D.department_id = L.department_id AND L.lawyer_id = S.id
+                            GROUP BY D.department_id
+                            """
+
+    db_cursor.execute(winning_rate_query)
+    winning_rates = db_cursor.fetchall()
+
+    dep_ids = [i[0] for i in winning_rates]
+    average_rates = [i[1] for i in winning_rates]
+
+    fig = plt.figure(figsize = (4, 0.5))
+    plt.bar(dep_ids, average_rates, width = 0.4)
+    plt.xlabel("Departments")
+    plt.ylabel("Average Winning Rates")
+    plt.title("Winning Rate Statistics of Departments")
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(np.arange(0, 101, 5), fontsize=10)
+
+    canvas = FigureCanvasTkAgg(fig, master=winning_rate_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        winning_rate_window.destroy()
+
+    winning_rate_window.protocol("WM_DELETE_WINDOW", on_close)
+
+    # Start the event loop for the new pop-up window
+    winning_rate_window.mainloop()
+
+winning_rate_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showWinningRate)
+winning_rate_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
 
 
 
