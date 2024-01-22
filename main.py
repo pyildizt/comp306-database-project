@@ -759,11 +759,15 @@ removeLawsuitButton.place(x=350,y=300)
 
 def verdictStatisticsCommand():
 
-    db_cursor.execute("""SELECT verdict, COUNT(lawsuit_id)
-                            FROM Lawsuit
-                            GROUP BY verdict
-                            ORDER BY COUNT(lawsuit_id) ASC
-                            """)
+    verdictStaticsQuery = """SELECT L.verdict, COUNT(*)
+           FROM Lawsuit L, Client C
+           WHERE L.client_id = C.client_id""" + \
+           (""" AND C.sex = '{}'""".format(clientGenderComboBox.get()[0]) if clientGenderComboBox.get() != "No Choice" else "") + \
+           (""" AND L.court_date > '{}'""".format(fromDateEntry.get()) if fromDateEntry.get() != "" else "") + \
+           (""" AND L.judge_name LIKE '{}'""".format(whichJudgeComboBox.get()) if whichJudgeComboBox.get() != "No Choice" else "") + \
+           """ GROUP BY L.verdict ORDER BY COUNT(*) ASC"""
+    print(verdictStaticsQuery)
+    db_cursor.execute(verdictStaticsQuery)
     verdictCountList = db_cursor.fetchall()
     verdicts = [i[0] for i in verdictCountList]
     lawsuitSums = [i[1] for i in verdictCountList]
@@ -794,7 +798,14 @@ clientGenderComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),
 clientGenderLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Gender:")
 fromDateEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
 fromDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="From Which Date:")
-whichJudgeEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="Judge Name")
+db_cursor.execute("SELECT DISTINCT judge_name FROM Lawsuit")
+JudgeListDB = db_cursor.fetchall()
+
+JudgeList = []
+for jname in JudgeListDB:
+    JudgeList.append(jname[0])
+JudgeList.insert(0,"No Choice")
+whichJudgeComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=JudgeList)
 whichJudgeLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Sort By Judge:")
 verdictStatisticsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Verdict Statistics",command=verdictStatisticsCommand)
 
@@ -803,7 +814,7 @@ clientGenderComboBox.place(x=160,y=400)
 clientGenderLabel.place(x=20,y=400)
 fromDateEntry.place(x=160,y=430)
 fromDateLabel.place(x=20,y=430)
-whichJudgeEntry.place(x=160,y=460)
+whichJudgeComboBox.place(x=160,y=460)
 whichJudgeLabel.place(x=20,y=460)
 verdictStatisticsButton.place(x=350,y=430)
 
