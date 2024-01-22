@@ -297,8 +297,7 @@ def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
 
-        db_cursor.execute("""DELETE FROM Lawyers
-                            WHERE id_no = """ + str(selectedItemValues[2]))  #PROBABLY WONT WORK RIGHT NOW
+        db_cursor.execute("DELETE FROM Lawyer WHERE lawyer_id = \"" + str(selectedItemValues[2]) + "\"") 
         db_connection.commit()
 
         # also delete from treeview
