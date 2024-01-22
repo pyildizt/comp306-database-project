@@ -22,7 +22,7 @@ import re
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468", 
+  passwd="mysql201468",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -617,6 +617,62 @@ def showClientDetails():
 show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show Details", command=showClientDetails).place(x=950, y=350)
 
 ##### LAWSUITS TAB
+lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="Lawsuits")
+lawsuitTitle.pack(padx=10,pady=10)
+lawsuitColumns = ["lawsuit_id","verdict","court_date","judge_name","client_id"]
+lawsuitTree = ttk.Treeview(master=tabview.tab("Lawsuits"), columns=lawsuitColumns, show="headings", selectmode="browse")
+lawsuitTree.pack()
+lawsuitTree.heading("lawsuit_id",text="Lawsuit ID")
+lawsuitTree.heading("verdict",text="Verdict")
+lawsuitTree.heading("court_date",text="Court Date")
+lawsuitTree.heading("judge_name",text="Judge Name")
+lawsuitTree.heading("client_id",text="Client ID")
+
+allLawsuitsQuery = """SELECT * FROM Lawsuit"""
+db_cursor.execute(allLawsuitsQuery)
+allLawsuits = db_cursor.fetchall()
+for lawsuit in allLawsuits:
+    lawsuitTree.insert("",END,values=lawsuit)
+
+showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details")
+showLawsuitDetailsButton.place(x=180,y=300)
+
+lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Lawsuit ID")
+lawsuitIDEntry.place(x=880,y=300)
+
+verdictEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="Verdict")
+verdictEntry.place(x=880,y=330)
+
+courtDateEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Court Date")
+courtDateEntry.place(x=880,y=360)
+
+judgeNameEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Judge Name")
+judgeNameEntry.place(x=880,y=390)
+
+clientIdEntry = customtkinter.CTkEntry(master= tabview.tab("Lawsuits"),placeholder_text="Client ID")
+clientIdEntry.place(x=880,y=420)
+
+def addLawsuitButtonClick():
+    lawsuitId = lawsuitIDEntry.get()
+    verdict = verdictEntry.get()
+    courtDate = courtDateEntry.get()
+    judgeName = judgeNameEntry.get()
+    clientId = clientIdEntry.get()
+    try:
+        addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
+        print(addLawsuitQuery)
+        db_cursor.execute(addLawsuitQuery)
+        db_connection.commit()
+        lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
+    except Exception as e:
+        print(f"Error: {e}")
+        messagebox.showwarning("Format Error!","The input format is wrong.")
+
+addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
+addLawsuitButton.place(x=880,y=480)
+
+
+
 
 
 
