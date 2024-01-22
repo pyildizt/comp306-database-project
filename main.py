@@ -554,7 +554,8 @@ def insertClientToDatabase():
            bool(re.match(r'^\d+$', client_age)) and 
            bool(re.match(r'^\d{3}-\d{3}-\d{4}$', client_phone)) and 
            bool(re.match(r'^.+@email\.com$', client_email)) and 
-           bool(re.match(r'^\d{4}-\d{2}-\d{2}$', client_bdate))):
+           bool(re.match(r'^\d{4}-\d{2}-\d{2}$', client_bdate)) and
+           bool(re.match(r'^(Suspect|Defendant|Accused)$', client_state))):
         messagebox.showwarning("Validation Error", "Invalid input format.")
         return
     
@@ -601,12 +602,41 @@ def removeClientFromDatabase():
 
 remove_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Remove Client", command=removeClientFromDatabase).place(x=950, y=300)
 
-def showClientDetails():
-    return
+def showClientStateStatistics():
+    print("button pressed")
+    db_cursor.execute("""SELECT state, COUNT(client_id)
+                        FROM Client
+                        GROUP BY state
+                        ORDER BY COUNT(client_id) ASC
+                        """)
+    state_count_query = db_cursor.fetchall()
+    states = [i[0] for i in state_count_query]
+    state_sums = [i[1] for i in state_count_query]
 
-show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show Details", command=showClientDetails).place(x=950, y=350)
+    fig, ax = plt.subplots()
+    ax.pie(state_sums, labels=states, colors=["#B0DAFF", "#19A7CE","#146C94"], autopct='%.2f%%', startangle=90)
+    plt.title("Client Status Statistics")
+    ax.axis('equal') 
+    #plt.show()
+    
+    client_status_rate_window = customtkinter.CTkToplevel(main_app)
+    client_status_rate_window.title("Client Status Statistics")
+    client_status_rate_window.geometry("700x550+300+50")
+
+    canvas = FigureCanvasTkAgg(fig, master=client_status_rate_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        client_status_rate_window.destroy()
+
+    client_status_rate_window.protocol("WM_DELETE_WINDOW", on_close)
+    client_status_rate_window.mainloop()
+
+show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show State Statistics", command=showClientStateStatistics).place(x=950, y=350)
 
 def sortClientsByID():
+    print("sort clients by client_id")
     db_cursor.execute("SELECT * FROM Client ORDER BY client_id ASC")
     sorted_clients = db_cursor.fetchall()
 
@@ -622,6 +652,7 @@ def sortClientsByID():
 sort_clients_by_id_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Sort by ID", command=sortClientsByID).place(x=950, y=400)
 
 def sortClientsByName():
+    print("sort clients by fname")
     db_cursor.execute("SELECT * FROM Client ORDER BY fname ASC")
     sorted_clients = db_cursor.fetchall()
 
@@ -634,8 +665,23 @@ def sortClientsByName():
     for i in sorted_clients:
         client_tree.insert("", END, values=i)
 
-
 sort_clients_by_name_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Sort by Name", command=sortClientsByName).place(x=950, y=450)
+
+def sortClientsByState():
+    print("sort clients by state")
+    db_cursor.execute("SELECT * FROM Client ORDER BY state ASC")
+    sorted_clients = db_cursor.fetchall()
+
+    #Delete old items
+    old_items = client_tree.get_children()
+    for item in old_items:
+        client_tree.delete(item)
+
+    #Insert sorted items from query
+    for i in sorted_clients:
+        client_tree.insert("", END, values=i)
+
+sort_clients_by_state_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Sort by State", command=sortClientsByState).place(x=950, y=500)
 
 
 ##### LAWSUITS TAB
