@@ -960,7 +960,24 @@ winning_rate_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
 
 
 
+#Funny little query
+"""SELECT DISTINCT L.lawyer_id
+FROM Lawyer L
+WHERE NOT EXISTS
+(
+(SELECT R.lawyer_id
+FROM Represents R, Lawsuit LWS
+WHERE L.lawyer_id = R.lawyer_id
+AND R.lawsuit_id = LWS.lawsuit_id
+)
+EXCEPT
+(SELECT R2.lawyer_id
+FROM Represents R2, Lawsuit LWS2
+WHERE R2.lawsuit_id = LWS2.lawsuit_id
+AND LWS2.verdict = "Guilty")
+)"""
+
 
 # Start the ui
-#loginWindow()
+loginWindow()
 main_app.mainloop()
