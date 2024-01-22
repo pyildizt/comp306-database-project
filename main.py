@@ -21,7 +21,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="z1x?1zKucs",
+  passwd="123678zulal", 
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -267,14 +267,14 @@ label = customtkinter.CTkLabel(
     text="LAWYERS",
     font=("Courier", 30, "bold")
 )
-label.pack(pady=60, padx=10)
+label.pack(pady=10, padx=10)
 
 ### A Treeview
 table_columns = ("name","surname","id_no")
 
 #lawyers treeview
 lawyers_tree = ttk.Treeview(master=tabview.tab("Lawyers"), columns=table_columns, show="headings", selectmode="browse") # selectmode="browse" means the user can only select one row at a time
-lawyers_tree.pack() # makes ui look good i guess, DO NOT ERASE
+lawyers_tree.pack(padx=10, pady=10) # makes ui look good i guess, DO NOT ERASE
 
 # this is used to make the heading names look better
 lawyers_tree.heading("name",text="Name")
@@ -293,30 +293,36 @@ for lawyer in lawyers_data:
     lawyers_tree.insert("", END, values=lawyer)
 
 
+
 def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
 
-        db_cursor.execute("""DELETE FROM Lawyers
-                            WHERE id_no = """ + str(selectedItemValues[2]))  #PROBABLY WONT WORK RIGHT NOW
+        db_cursor.execute("DELETE FROM Lawyer WHERE lawyer_id = \"" + str(selectedItemValues[0]) + "\"")
         db_connection.commit()
 
         # also delete from treeview
         lawyers_tree.delete(lawyers_tree.selection())
 
-remove_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Remove Item From Tree", command=removeLawyerFromDatabase)
-remove_button.place(x=700,y=500)
-
+remove_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Remove Lawyer", command=removeLawyerFromDatabase)
+remove_button.place(x=900,y=90)
 
 def sort_lawyers_by_name():
-    valid_items = [item for item in lawyers_tree.get_children() if lawyers_tree.item(item, 'values')]
-    sorted_items = sorted(valid_items, key=lambda x: lawyers_tree.item(x, 'values')[0])
+    print("sort lawyers by fname")
+    db_cursor.execute("SELECT S.fname, S.lname, S.id FROM  Lawyer L JOIN Staff S ON L.lawyer_id = S.id  ORDER BY fname ASC")
+    sorted_lawyer = db_cursor.fetchall()
 
-    for index, item in enumerate(sorted_items):
-        lawyers_tree.move(item, "", index)
+    #Delete old items
+    old_items = lawyers_tree.get_children()
+    for item in old_items:
+        lawyers_tree.delete(item)
 
-sort_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Sort by Name", command=sort_lawyers_by_name)
-sort_button.place(x=900, y=200)
+    #Insert sorted items from query
+    for i in sorted_lawyer:
+        lawyers_tree.insert("", END, values=i)
+
+sorted_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Sort by Name", command=sort_lawyers_by_name)
+sorted_lawyer_button.place(x=900, y=140)
 
 def show_lawyer_info():
     selected_item = lawyers_tree.selection()
@@ -349,7 +355,7 @@ def show_lawyer_info():
             no_details_label.pack(pady=20, padx=20)
 
 show_details_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Show Info", command=show_lawyer_info)
-show_details_button.place(x=900, y=250)
+show_details_button.place(x=900, y=190)
 
 #info ile aynı mantık ama clientları da var ekstradan
 def show_lawyer_details():
@@ -391,7 +397,7 @@ def show_lawyer_details():
                 client_info_label.pack(pady=5, padx=20)
 
 show_details_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Show Details", command=show_lawyer_details)
-show_details_button.place(x=900, y=300)
+show_details_button.place(x=900, y=240)
 
 
 def search_lawyers():
@@ -411,9 +417,11 @@ def search_lawyers():
         lawyers_tree.insert("", END, values=lawyer)
 
 search_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Search Lawyers", command=search_lawyers)
-search_button.place(x=900, y=100)
+search_button.place(x=900, y=10)
 search_entry = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Enter lawyer's name")
-search_entry.place(x=750, y=100)
+search_entry.place(x=750, y=10)
+
+
 
 
 ##### yeni eklediğimi silemiyorum ? ##########
@@ -441,17 +449,17 @@ def addLawyer():
     lawyer_id_input.delete(0, END)
 
 fname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="First Name")
-fname_input.place(x=500, y=400)
+fname_input.place(x=500, y=300)
 
 lname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Last Name")
-lname_input.place(x=500, y=450)
+lname_input.place(x=500, y=350)
 
 lawyer_id_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="LAWXXX")
-lawyer_id_input.place(x=500, y=500)
+lawyer_id_input.place(x=500, y=400)
 
 
 insert_button1 = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Add Lawyer", command=addLawyer)
-insert_button1.place(x=500, y=550)
+insert_button1.place(x=500, y=450)
 
 
 ##### CLIENTS TAB
@@ -612,7 +620,6 @@ def removeClientFromDatabase():
     #else:
     #    messagebox.showwarning("Selection Error", "Please select client to remove.")
 
-
 remove_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Remove Client", command=removeClientFromDatabase).place(x=950, y=300)
 
 def showClientStateStatistics():
@@ -670,9 +677,7 @@ def sortClientsByName():
     sorted_clients = db_cursor.fetchall()
 
     #Delete old items
-    old_items = client_tree.get_children()
-    for item in old_items:
-        client_tree.delete(item)
+    client_tree.delete(*client_tree.get_children())
 
     #Insert sorted items from query
     for i in sorted_clients:
@@ -686,15 +691,31 @@ def sortClientsByState():
     sorted_clients = db_cursor.fetchall()
 
     #Delete old items
-    old_items = client_tree.get_children()
-    for item in old_items:
-        client_tree.delete(item)
+    client_tree.delete(*client_tree.get_children())
 
     #Insert sorted items from query
     for i in sorted_clients:
         client_tree.insert("", END, values=i)
 
 sort_clients_by_state_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Sort by State", command=sortClientsByState).place(x=950, y=500)
+
+search_client_entry = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="Enter client name")
+search_client_entry.place(x=750, y=10)
+
+def searchClientByName():
+    searched_name = search_client_entry.get().strip().lower()
+    print(searched_name)
+    client_tree.delete(*client_tree.get_children())
+
+    db_cursor.execute("SELECT * FROM Client WHERE LOWER(CONCAT(' ', fname, lname)) LIKE \"%" + searched_name + "%\"")
+    searched_clients = db_cursor.fetchall()
+
+    for i in searched_clients:
+        client_tree.insert("", END, values=i)
+    
+    search_client_entry.delete(0, END)
+
+search_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Search Client", command=searchClientByName).place(x=900, y=10)
 
 
 ##### LAWSUITS TAB
@@ -703,7 +724,7 @@ lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="LAWS
 lawsuitTitle.pack(padx=10,pady=10)
 lawsuitColumns = ["lawsuit_id","verdict","court_date","judge_name","client_id"]
 lawsuitTree = ttk.Treeview(master=tabview.tab("Lawsuits"), columns=lawsuitColumns, show="headings", selectmode="browse")
-lawsuitTree.pack()
+lawsuitTree.pack(padx=10, pady=10)
 lawsuitTree.heading("lawsuit_id",text="Lawsuit ID")
 lawsuitTree.heading("verdict",text="Verdict")
 lawsuitTree.heading("court_date",text="Court Date")
@@ -874,6 +895,7 @@ def addLawsuitButtonClick():
     db_connection.commit()
     lawsuitTree.insert("",END,values=(lawsuitId, verdict, courtDate, judgeName, clientId))
 
+
     lawsuitIDEntry.delete(0,END)
     verdictEntry.delete(0,END)
     courtDateEntry.delete(0,END)
@@ -883,7 +905,34 @@ def addLawsuitButtonClick():
 addLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"), text="Add Lawsuit",command=addLawsuitButtonClick)
 addLawsuitButton.place(x=880,y=480)
 
+def filter_lawsuits_verdict(event):
+    selected_verdict = lawsuit_combobox.get()
+    lawsuitTree.delete(*lawsuitTree.get_children())
 
+    all_lawsuits = db_cursor.execute("""SELECT * FROM Lawsuit""")
+    all_lawsuits = db_cursor.fetchall()
+
+    if (selected_verdict == "All"):
+        for lawsuit in all_lawsuits:
+            lawsuitTree.insert("", END, values=lawsuit)        
+
+    filter_verdict = db_cursor.execute("""SELECT *
+                                                 FROM Lawsuit L
+                                                 WHERE verdict = %s
+                                                """, (selected_verdict,))
+
+
+    filter_verdict_list = db_cursor.fetchall()
+    for lawsuit in filter_verdict_list:
+        lawsuitTree.insert("", END, values=lawsuit)
+
+lawsuits_list = ["All","Guilty","Free"]
+lawsuit_combobox = ttk.Combobox(master=tabview.tab("Lawsuits"), values=lawsuits_list, state="readonly", width = 30)
+lawsuit_combobox.set("Verdict")
+lawsuit_combobox.place(x=700, y=20)
+lawsuit_combobox.bind("<<ComboboxSelected>>", filter_lawsuits_verdict)
+
+                                            
 
 
 ##### DEPARTMENTS TAB
@@ -900,7 +949,7 @@ departments = db_cursor.fetchall()
 
 #Department Tree View
 department_tree = ttk.Treeview(master=tabview.tab("Departments"), columns=department_columns, show="headings", selectmode="browse") 
-department_tree.pack()
+department_tree.pack(padx=10, pady=10)
 
 department_tree.heading(department_columns[0], text="Department ID")
 department_tree.heading(department_columns[1], text="Department Name")
@@ -1048,6 +1097,23 @@ winning_rate_button = customtkinter.CTkButton(tabview.tab("Departments"), text="
 winning_rate_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
 
 
+
+#Funny little query
+"""SELECT DISTINCT L.lawyer_id
+FROM Lawyer L
+WHERE NOT EXISTS
+(
+(SELECT R.lawyer_id
+FROM Represents R, Lawsuit LWS
+WHERE L.lawyer_id = R.lawyer_id
+AND R.lawsuit_id = LWS.lawsuit_id
+)
+EXCEPT
+(SELECT R2.lawyer_id
+FROM Represents R2, Lawsuit LWS2
+WHERE R2.lawsuit_id = LWS2.lawsuit_id
+AND LWS2.verdict = "Guilty")
+)"""
 
 
 # Start the ui
