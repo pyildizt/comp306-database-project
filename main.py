@@ -758,10 +758,54 @@ removeLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),te
 removeLawsuitButton.place(x=350,y=300)
 
 def verdictStatisticsCommand():
+
+    db_cursor.execute("""SELECT verdict, COUNT(lawsuit_id)
+                            FROM Lawsuit
+                            GROUP BY verdict
+                            ORDER BY COUNT(lawsuit_id) ASC
+                            """)
+    verdictCountList = db_cursor.fetchall()
+    verdicts = [i[0] for i in verdictCountList]
+    lawsuitSums = [i[1] for i in verdictCountList]
+
+    fig, ax = plt.subplots()
+    ax.pie(lawsuitSums, labels=verdicts, colors=["#B0DAFF", "#19A7CE", "#146C94"], autopct='%.2f%%', startangle=90)
+    plt.title("Verdict Statistics")
+    ax.axis('equal')
+
+
+    verdictStatisticsWindow = customtkinter.CTkToplevel(main_app)
+    verdictStatisticsWindow.title("Verdict Statistics")
+    verdictStatisticsWindow.geometry("700x550+300+50")
+
+    canvas = FigureCanvasTkAgg(fig, master=verdictStatisticsWindow)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        verdictStatisticsWindow.destroy()
+
+    verdictStatisticsWindow.protocol("WM_DELETE_WINDOW", on_close)
+    verdictStatisticsWindow.mainloop()
+
     return
 
+clientGenderComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=("No Choice","Male","Female"))
+clientGenderLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Gender:")
+fromDateEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
+fromDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="From Which Date:")
+whichJudgeEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="Judge Name")
+whichJudgeLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Sort By Judge:")
 verdictStatisticsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Verdict Statistics",command=verdictStatisticsCommand)
-verdictStatisticsButton.place(x=235,y=400)
+
+
+clientGenderComboBox.place(x=160,y=400)
+clientGenderLabel.place(x=20,y=400)
+fromDateEntry.place(x=160,y=430)
+fromDateLabel.place(x=20,y=430)
+whichJudgeEntry.place(x=160,y=460)
+whichJudgeLabel.place(x=20,y=460)
+verdictStatisticsButton.place(x=350,y=430)
 
 lawsuitIDLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Lawsuit ID:")
 lawsuitIDEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"), placeholder_text="LWSXXX")
