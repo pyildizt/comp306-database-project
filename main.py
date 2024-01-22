@@ -4,10 +4,19 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
-# Import for database
+# Imports for showing details in UI
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
+
+# Import for checking inputs in UI (regular expressions)
+import re
+
+# Imports for database
 import mysql.connector
 import csv
 import pandas as pd
+import re
 
 #CREATE DATABASE:
 db_connection = mysql.connector.connect(
@@ -57,12 +66,13 @@ populate_table(db_connection, db_cursor, insert_staff, "./data/Staff.csv")
 #Create Administrator table
 db_cursor.execute("""CREATE TABLE IF NOT EXISTS Administrator (
                     admin_id CHAR(6),
+                    password INT,
                     PRIMARY KEY (admin_id),
                     FOREIGN KEY (admin_id) REFERENCES Staff(id))""")
 
 insert_administrators = (
-    "INSERT INTO Administrator(admin_id) "
-    "VALUES (%s)"
+    "INSERT INTO Administrator(admin_id,password) "
+    "VALUES (%s,%s)"
 )
 
 populate_table(db_connection, db_cursor, insert_administrators, "./data/Administrator.csv")
@@ -91,9 +101,9 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawyer (
                     department_id CHAR(6),
                     winning_rate INT,
                     PRIMARY KEY (lawyer_id),
-                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id),
+                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id), 
                     FOREIGN KEY (department_id) REFERENCES Department(department_id))""")
-
+                    
 insert_lawyers = (
     "INSERT INTO Lawyer(lawyer_id, department_id, winning_rate) "
     "VALUES (%s, %s, %s)"
@@ -131,7 +141,7 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawsuit (
                         judge_name VARCHAR(50),
                         client_id CHAR(6),
                         PRIMARY KEY (lawsuit_id),
-                        FOREIGN KEY (client_id) REFERENCES Client(client_id)
+                        FOREIGN KEY (client_id) REFERENCES Client(client_id) ON DELETE CASCADE
                     )""")
 
 insert_lawsuits = (
@@ -148,8 +158,8 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Represents (
                         lawsuit_id CHAR(6),
                         fee INT,
                         PRIMARY KEY (lawyer_id, lawsuit_id),
-                        FOREIGN KEY (lawyer_id) REFERENCES Lawyer(lawyer_id),
-                        FOREIGN KEY (lawsuit_id) REFERENCES Lawsuit(lawsuit_id)
+                        FOREIGN KEY (lawyer_id) REFERENCES Lawyer(lawyer_id) ON DELETE CASCADE,
+                        FOREIGN KEY (lawsuit_id) REFERENCES Lawsuit(lawsuit_id) ON DELETE CASCADE
                     )""")
 
 insert_represents = (
@@ -168,8 +178,8 @@ db_cursor.execute("""CREATE TABLE IF NOT EXISTS Counsels (
                         fee INT,
                         date DATE,
                         PRIMARY KEY(lawyer_id, client_id),
-                        FOREIGN KEY(lawyer_id) REFERENCES Lawyer(lawyer_id),
-                        FOREIGN KEY(client_id) REFERENCES Client(client_id)
+                        FOREIGN KEY(lawyer_id) REFERENCES Lawyer(lawyer_id) ON DELETE CASCADE,
+                        FOREIGN KEY(client_id) REFERENCES Client(client_id) ON DELETE CASCADE
                         )""")
 
 # Insert into Counsels table
@@ -189,7 +199,57 @@ customtkinter.set_default_color_theme("blue")
 # Main application 
 main_app = customtkinter.CTk()
 main_app.title("Intellectual Property Firm System")
-main_app.geometry("1200x700")
+main_app.geometry("1200x700+70+0")
+main_app.resizable(width=None, height=None)
+
+def loginWindow():
+    login_window = customtkinter.CTkToplevel(main_app) 
+    login_window.title("Login")
+    login_window.geometry("500x300+500+300")
+
+    main_app.withdraw() #iconify()
+    frame = customtkinter.CTkFrame(master=login_window) 
+    frame.pack(pady=20,padx=40,fill='both',expand=True)
+
+    login_label1 = customtkinter.CTkLabel(master=frame, text="")
+    login_label1.pack(pady=10, padx=10)
+    
+    admin_id_query = db_cursor.execute("""SELECT admin_id FROM Administrator""")
+    admin_ids = db_cursor.fetchall() 
+    admin_ids_list = [i[0] for i in admin_ids]
+
+    admin_id_combobox = ttk.Combobox(master=frame, values=admin_ids_list, state="readonly", width = 30)
+    admin_id_combobox.set("Admin ID")
+    admin_id_combobox.pack(pady=12, padx=120)
+
+    user_pass= customtkinter.CTkEntry(master=frame,placeholder_text="Password",show="*", width=180) 
+    user_pass.pack(pady=12,padx=10)
+
+
+    def login():
+        username = admin_id_combobox.get()  # Use the selected admin ID as the username
+        password = user_pass.get()
+
+        adm_password = db_cursor.execute("""SELECT password FROM Administrator WHERE Administrator.admin_id = %s""", (username,))
+        adm_password = db_cursor.fetchall()
+        adm_password = str(adm_password[0][0])
+
+        if password == adm_password: 
+            main_app.deiconify()
+            login_window.destroy()
+
+        elif password == "":
+            messagebox.showwarning("Password Error", "Admin password is null!")
+
+        else:
+            messagebox.showwarning("Password Error", "Admin password is wrong!")
+            return
+            
+
+    button = customtkinter.CTkButton(master=frame,text='Login',command=login) 
+    button.pack(pady=12,padx=10) 
+
+
 
 ### Tabview
 tabview = customtkinter.CTkTabview(master=main_app)
@@ -202,43 +262,15 @@ for i in tabs:
 tabview.set("Lawyers") # set as default tab
 
 
-
-
 ##### LAWYERS TAB
-
-### A Label
-label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Lawyers")
-# Basically master=frame or master=tabview.tab("Tab1") is where the components are put into
-label.pack(pady=10, padx=10)
-# note: Anything with a CTk before it like CTkFrame is from customtkinter library and lets you use .pack(pady=?, padx=?)
-# But other things like Treeview is from tkinter library so you have to use .place(x=?, y=?)
-# If pack() is hard to use just use place() instead
-
-
-### An Entry
-# Like a TextBox, lets the user enter string inside
-entry1 = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Enter something here.")
-entry1.pack(pady=10, padx=10)
-
-### A Button
-# You create a function without any arguments and then use command=function_name to call it with button press
-# In this example, the function prints "Button is pressed" to the console
-def test():
-    print("Button is pressed")
-
-button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Test Button", command=test)
-button.pack(pady=10, padx=10)
-
+label = customtkinter.CTkLabel(
+    master=tabview.tab("Lawyers"),
+    text="LAWYERS",
+    font=("Courier", 30, "bold")
+)
+label.pack(pady=60, padx=10)
 
 ### A Treeview
-#df = pd.read_csv('./data/Lawyer.csv')
-#lawyers_columns = list(df.columns)
-
-
-#db_cursor.execute("SELECT * FROM Lawyer")
-#lawyers = db_cursor.fetchall()
-
-# for now i just wrote it insetad of taking from database
 table_columns = ("name","surname","id_no")
 
 #lawyers treeview
@@ -250,22 +282,21 @@ lawyers_tree.heading("name",text="Name")
 lawyers_tree.heading("surname",text="Surname")
 lawyers_tree.heading("id_no",text="ID No")
 
-# Insert info into treeview (NORMALLY info SHOULD BE TAKEN FROM DATABASE)
-info = (("Ali","Aman",5),("Fatma","Tekin",7),("Öykü","Dolu",11))
-for i in info:
-    lawyers_tree.insert("", END, values=i)
+# data from the Lawyer and Staff tables 
+db_cursor.execute("""
+    SELECT s.fname, s.lname,s.id, s.sex, s.phone_number, s.email, s.salary
+    FROM Staff s
+    JOIN Lawyer l ON s.id = l.lawyer_id
+""")
+lawyers_data = db_cursor.fetchall()
+
+for lawyer in lawyers_data:
+    lawyers_tree.insert("", END, values=lawyer)
 
 
 def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
-
-        ### IMPORTANT BIT ###
-        # This is how you get the values from selected item, just copy paste it
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
-        # This returns a list like ["Ali", "Aman", 5], then you can do selectedItemValues[0] to get "Ali" or whatever
-        #####################
-
-        print(selectedItemValues)
 
         db_cursor.execute("""DELETE FROM Lawyers
                             WHERE id_no = """ + str(selectedItemValues[2]))  #PROBABLY WONT WORK RIGHT NOW
@@ -278,10 +309,312 @@ remove_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Rem
 remove_button.place(x=700,y=500)
 
 
+def sort_lawyers_by_name():
+    valid_items = [item for item in lawyers_tree.get_children() if lawyers_tree.item(item, 'values')]
+    sorted_items = sorted(valid_items, key=lambda x: lawyers_tree.item(x, 'values')[0])
+
+    for index, item in enumerate(sorted_items):
+        lawyers_tree.move(item, "", index)
+
+sort_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Sort by Name", command=sort_lawyers_by_name)
+sort_button.place(x=900, y=200)
+
+def show_lawyer_info():
+    selected_item = lawyers_tree.selection()
+    if selected_item:
+        item_values = lawyers_tree.item(selected_item, "values")
+        lawyer_id = item_values[2]
+
+        db_cursor.execute(f"SELECT L.*, S.fname, S.lname, S.sex, S.phone_number, S.email, S.salary "
+                          f"FROM Lawyer L JOIN Staff S ON L.lawyer_id = S.id "
+                          f"WHERE L.lawyer_id = '{lawyer_id}'")
+        lawyer_details = db_cursor.fetchone()
+
+        # yeni window oluşturup gösteriyor - başka nasıl gösterebiliriz?
+        details_window = Toplevel(main_app)
+        details_window.title(f"Info for Lawyer ID {lawyer_id}")
+
+        if lawyer_details:
+            details_label = Label(details_window, text=f"Lawyer ID: {lawyer_details[0]}\n"
+                                                        f"Department ID: {lawyer_details[1]}\n"
+                                                       f"Winning Rate: {lawyer_details[2]}\n"
+                                                       f"First Name: {lawyer_details[3]}\n"
+                                                        f"Last Name: {lawyer_details[4]}\n"
+                                                       f"Sex: {lawyer_details[5]}\n"
+                                                       f"Phone Number: {lawyer_details[6]}\n"
+                                                       f"Email: {lawyer_details[7]}\n"
+                                                      f"Salary: {lawyer_details[8]}")
+            details_label.pack(pady=20, padx=20)
+        else:
+            no_details_label = Label(details_window, text=f"No info found for Lawyer ID {lawyer_id}")
+            no_details_label.pack(pady=20, padx=20)
+
+show_details_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Show Info", command=show_lawyer_info)
+show_details_button.place(x=900, y=250)
+
+#info ile aynı mantık ama clientları da var ekstradan
+def show_lawyer_details():
+    selected_item = lawyers_tree.selection()
+    if selected_item:
+        item_values = lawyers_tree.item(selected_item, "values")
+        lawyer_id = item_values[2]
+
+        db_cursor.execute(f"SELECT * FROM Lawyer WHERE lawyer_id = '{lawyer_id}'")
+        lawyer_details = db_cursor.fetchone()
+
+        db_cursor.execute(f"""
+            SELECT c.client_id, c.fname, c.lname, c.sex, c.age, c.phone_number, c.email, c.address, c.bdate, c.state
+            FROM Counsels cl
+            JOIN Client c ON cl.client_id = c.client_id
+            WHERE cl.lawyer_id = '{lawyer_id}'
+        """)
+        client_details = db_cursor.fetchall()
+
+        details_window = Toplevel(main_app)
+        details_window.title(f"Details for Lawyer ID {lawyer_id}")
+
+        if lawyer_details:
+            details_label = Label(details_window, text=f"Lawyer ID: {lawyer_details[0]}")
+            details_label.pack(pady=20, padx=20)
+        else:
+            no_details_label = Label(details_window, text=f"No details found for Lawyer ID {lawyer_id}")
+            no_details_label.pack(pady=20, padx=20)
+
+        if client_details:
+            client_label = Label(details_window, text="Client Details:")
+            client_label.pack(pady=10, padx=20)
+
+            for client in client_details:
+                client_info_label = Label(
+                    details_window,
+                    text=f"Client ID: {client[0]}, Name: {client[1]} {client[2]}, Sex: {client[3]}, Age: {client[4]}, Phone: {client[5]}, Email: {client[6]}, Address: {client[7]}, Birthdate: {client[8]}, State: {client[9]}"
+                )
+                client_info_label.pack(pady=5, padx=20)
+
+show_details_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Show Details", command=show_lawyer_details)
+show_details_button.place(x=900, y=300)
+
+
+def search_lawyers():
+    search_name = search_entry.get().strip().lower()
+
+    lawyers_tree.delete(*lawyers_tree.get_children())
+        
+    db_cursor.execute(f"""
+        SELECT s.fname, s.lname,s.id,  s.sex, s.phone_number, s.email, s.salary, l.*
+        FROM Staff s
+        JOIN Lawyer l ON s.id = l.lawyer_id
+        WHERE LOWER(CONCAT(' ', s.fname, s.lname)) LIKE '%{search_name}%'
+    """)
+    searched_lawyers = db_cursor.fetchall()
+
+    for lawyer in searched_lawyers:
+        lawyers_tree.insert("", END, values=lawyer)
+
+search_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Search Lawyers", command=search_lawyers)
+search_button.place(x=900, y=100)
+search_entry = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Enter lawyer's name")
+search_entry.place(x=750, y=100)
+
+
+##### yeni eklediğimi silemiyorum ? ##########
+
+def addLawyer():
+    fname = fname_input.get()
+    lname = lname_input.get()
+    lawyer_id = lawyer_id_input.get()
+
+    if not all([fname, lname, lawyer_id]):
+        messagebox.showwarning("Validation Error", "Please fill in all the fields.")
+        return
+
+    if not (lawyer_id.startswith("LAW") and len(lawyer_id) == 6):
+        messagebox.showwarning("Validation Error", "Invalid input format or length.")
+        return
+
+    lawyers_tree.insert("", END, values=(fname, lname, lawyer_id))
+    db_cursor.execute("INSERT INTO LAWYER (fname, lname, lawyer_id) VALUES (%s, %s, %s)",
+                      (fname, lname, lawyer_id))
+    db_connection.commit()
+
+    fname_input.delete(0, END)
+    lname_input.delete(0, END)
+    lawyer_id_input.delete(0, END)
+
+fname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="First Name")
+fname_input.place(x=500, y=400)
+
+lname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Last Name")
+lname_input.place(x=500, y=450)
+
+lawyer_id_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="LAWXXX")
+lawyer_id_input.place(x=500, y=500)
+
+
+insert_button1 = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Add Lawyer", command=addLawyer)
+insert_button1.place(x=500, y=550)
+
 
 ##### CLIENTS TAB
+clients_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="CLIENTS", font=("Courier", 30, "bold")).pack(pady=10, padx=10)
+
+#Client Headers
+df = pd.read_csv('./data/Client.csv')
+client_columns = tuple(df.columns)
+
+#Client Columns
+db_cursor.execute("SELECT * FROM Client")
+clients_from_database = db_cursor.fetchall()
+
+#Client Tree View
+client_tree = ttk.Treeview(master=tabview.tab("Clients"), columns=client_columns, show="headings", selectmode="browse") 
+client_tree.pack(padx=10, pady=10)
+
+client_tree.heading(client_columns[0], text="Client ID")
+client_tree.heading(client_columns[1], text="Name")
+client_tree.heading(client_columns[2], text="Surname")
+client_tree.heading(client_columns[3], text="Sex")
+client_tree.heading(client_columns[4], text="Age")
+client_tree.heading(client_columns[5], text="Phone No")
+client_tree.heading(client_columns[6], text="Email")
+client_tree.heading(client_columns[7], text="Address")
+client_tree.heading(client_columns[8], text="Birthdate")
+client_tree.heading(client_columns[9], text="State")
+
+for i in range(10):
+    if i == 0 or i == 3 or i == 4:
+        client_tree.column(column=i,width=60,stretch=False)
+    elif i == 5:
+        client_tree.column(column=i,width=115,stretch=False)
+    elif i == 6:
+        client_tree.column(column=i,width=200,stretch=False)
+    else:
+        client_tree.column(column=i,width=105,stretch=False)
+
+for i in clients_from_database:
+    client_tree.insert("", END, values=i)
+    
+
+## Entry widgets for adding a new client
+# Label and Entry for Client ID
+client_id_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Client ID:").place(x=120, y=300)
+client_id_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="CLIXX", width=100)
+client_id_input.place(x=120, y=330)
+
+# Label and Entry for First Name
+client_fname_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Name:").place(x=270, y=300)
+client_fname_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_fname_input.place(x=270, y=330)
+
+# Label and Entry for Last Name
+client_lname_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Surname:").place(x=420, y=300)
+client_lname_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_lname_input.place(x=420, y=330)
+
+# Label and Entry for Sex
+client_sex_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Sex:").place(x=570, y=300)
+client_sex_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="F or M", width=100)
+client_sex_input.place(x=570, y=330)
+
+# Label and Entry for Age
+client_age_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Age:").place(x=720, y=300)
+client_age_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_age_input.place(x=720, y=330)
+
+# Label and Entry for Phone Number
+client_phone_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Phone Number:").place(x=120, y=380)
+client_phone_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="___-___-____", width=100)
+client_phone_input.place(x=120, y=410)
+
+# Label and Entry for Email
+client_email_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Email:").place(x=270, y=380)
+client_email_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="_@email.com", width=100)
+client_email_input.place(x=270, y=410)
+
+# Label and Entry for Address
+client_address_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Address:").place(x=420, y=380)
+client_address_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_address_input.place(x=420, y=410)
+
+# Label and Entry for Birthdate
+client_bdate_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="Birthdate:").place(x=570, y=380)
+client_bdate_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="yyyy-mm-dd", width=100)
+client_bdate_input.place(x=570, y=410)
+
+# Label and Entry for State
+client_state_label = customtkinter.CTkLabel(master=tabview.tab("Clients"), text="State:").place(x=720, y=380)
+client_state_input = customtkinter.CTkEntry(master=tabview.tab("Clients"), placeholder_text="", width=100)
+client_state_input.place(x=720, y=410)
+
+# Insert Client Button
+def insertClientToDatabase():
+    client_id = client_id_input.get()
+    client_fname = client_fname_input.get()
+    client_lname = client_lname_input.get()
+    client_sex = client_sex_input.get()
+    client_age = client_age_input.get()
+    client_phone = client_phone_input.get()
+    client_email = client_email_input.get()
+    client_address = client_address_input.get()
+    client_bdate = client_bdate_input.get()
+    client_state = client_state_input.get()
+
+    if not all([client_id, client_fname, client_lname, client_sex, client_age, client_phone, client_email, client_address, client_bdate, client_state]):
+        messagebox.showwarning("Validation Error", "Please fill in all the fields.")
+        return
+
+    if not(bool(re.match(r'^CLI\d{2}$', client_id)) and 
+           bool(re.match(r'^(F|M)$', client_sex)) and 
+           bool(re.match(r'^\d+$', client_age)) and 
+           bool(re.match(r'^\d{3}-\d{3}-\d{4}$', client_phone)) and 
+           bool(re.match(r'^.+@email\.com$', client_email)) and 
+           bool(re.match(r'^\d{4}-\d{2}-\d{2}$', client_bdate))):
+        messagebox.showwarning("Validation Error", "Invalid input format.")
+        return
+    
+    if False: ##CHECK IF CLIENT ID IS ALREADY IN DATABASE IN HERE!!!!!!!
+        messagebox.showwarning("Validation Error", "Client ID already exists in Client table.")
+        return
+
+    client_tree.insert("", END, values=(client_id, client_fname, client_lname, client_sex, client_age, client_phone, client_email, client_address, client_bdate, client_state))
+    db_cursor.execute("INSERT INTO Client (client_id,fname,lname,sex,age,phone_number,email,address,bdate,state) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                      (client_id, client_fname, client_lname, client_sex, client_age, client_phone, client_email, client_address, client_bdate, client_state))
+    db_connection.commit()
+
+    # Clear the entry widgets
+    client_id_input.delete(0, END)
+    client_fname_input.delete(0, END)
+    client_lname_input.delete(0, END)
+    client_sex_input.delete(0, END)
+    client_age_input.delete(0, END)
+    client_phone_input.delete(0, END)
+    client_email_input.delete(0, END)
+    client_address_input.delete(0, END)
+    client_bdate_input.delete(0, END)
+    client_state_input.delete(0, END)
+
+insert_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Add Client", width=100, command=insertClientToDatabase).place(x=420, y=470)
+
+# Remove Client Button
+def removeClientFromDatabase():
+    if client_tree.selection() != None: 
+        selectedItemValues = client_tree.item(client_tree.focus()).get('values')
+        db_cursor.execute("DELETE FROM Client WHERE client_id = \"" + str(selectedItemValues[0]) + "\"")
+        db_connection.commit()
+
+        # also delete from treeview
+        client_tree.delete(client_tree.selection())
+
+    else:
+        messagebox.showwarning("Selection Error", "Please select client to remove.")
 
 
+remove_client_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Remove Client", command=removeClientFromDatabase).place(x=950, y=300)
+
+def showClientDetails():
+    return
+
+show_client_details_button = customtkinter.CTkButton(master=tabview.tab("Clients"), text="Show Details", command=showClientDetails).place(x=950, y=350)
 
 ##### LAWSUITS TAB
 lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="Lawsuits")
@@ -345,8 +678,169 @@ addLawsuitButton.place(x=880,y=480)
 
 
 ##### DEPARTMENTS TAB
+department_label = customtkinter.CTkLabel(master=tabview.tab("Departments"), text="Departments")
+department_label.pack(pady=10, padx=10)
+
+#Department Headers
+df = pd.read_csv('./data/Department.csv')
+department_columns = tuple(df.columns)
+
+#Department Columns
+db_cursor.execute("SELECT * FROM Department")
+departments = db_cursor.fetchall()
+
+#Department Tree View
+department_tree = ttk.Treeview(master=tabview.tab("Departments"), columns=department_columns, show="headings", selectmode="browse") 
+department_tree.pack()
+
+department_tree.heading(department_columns[0], text="Department ID")
+department_tree.heading(department_columns[1], text="Department Name")
+department_tree.heading(department_columns[2], text="Admin ID")
+department_tree.column(department_columns[1], minwidth=0, width=300)
+
+for i in departments:
+    department_tree.insert("", END, values=i)
+    
+
+#Insert Button for Department
+def insertDepartmentToDatabase():
+    dep_id = dep_id_input.get()
+    dep_name = dep_name_input.get()
+    adm_id = admin_id_input.get()
+
+    if not all([dep_id, dep_name, adm_id]):
+        messagebox.showwarning("Validation Error", "Please fill in all the fields.")
+        return
+
+    if not (dep_id.startswith("DEP") and len(dep_id) == 6 and adm_id.startswith("ADM") and len(adm_id) == 6):
+        messagebox.showwarning("Validation Error", "Invalid input format or length.")
+        return
+
+    admin_id_query = db_cursor.execute("""SELECT admin_id FROM Administrator""")
+    admin_ids = db_cursor.fetchall() 
+    admin_ids_list = [i[0] for i in admin_ids]
+
+    dep_id_query = db_cursor.execute("""SELECT department_id FROM Department""")
+    dep_ids = db_cursor.fetchall() 
+    dep_ids_list = [i[0] for i in dep_ids]
+
+    if (dep_id in dep_ids_list):
+        messagebox.showwarning("Validation Error", "This Department already exists!")
+        return
+
+    if (adm_id not in admin_ids_list):
+        messagebox.showwarning("Validation Error", "Assign an existing Admin!")
+        return
+
+    department_tree.insert("", END, values=(dep_id, dep_name, adm_id))
+    db_cursor.execute("INSERT INTO Department (department_id, department_name, admin_id) VALUES (%s, %s, %s)",
+                      (dep_id, dep_name, adm_id))
+    db_connection.commit()
+
+    # Clear the entry widgets
+    dep_id_input.delete(0, END)
+    dep_name_input.delete(0, END)
+    admin_id_input.delete(0, END)
+
+
+# Entry widgets for adding a new department
+dep_id_label = customtkinter.CTkLabel(tabview.tab("Departments"), text="Department ID:")
+dep_name_label = customtkinter.CTkLabel(tabview.tab("Departments"), text="Department Name:")
+admin_id_label = customtkinter.CTkLabel(tabview.tab("Departments"), text="Admin ID:")
+
+dep_id_label.pack(side="top",padx=5, pady=9)
+dep_id_input = customtkinter.CTkEntry(tabview.tab("Departments"), placeholder_text="DEPXXX")
+dep_id_input.pack(padx=5, pady=5)
+
+dep_name_label.pack(padx=5, pady=4)
+dep_name_input = customtkinter.CTkEntry(tabview.tab("Departments"), placeholder_text="Department Name")
+dep_name_input.pack(padx=5, pady=5)
+
+admin_id_label.pack(padx=5, pady=4)
+admin_id_input = customtkinter.CTkEntry(tabview.tab("Departments"), placeholder_text= "ADMXXX")
+admin_id_input.pack(padx=5, pady=5)
+
+# Insert Button for Department
+insert_button = customtkinter.CTkButton(master=tabview.tab("Departments"), text="Add Department", command=insertDepartmentToDatabase)
+insert_button.pack(pady=10)
+
+#Show Department Details
+def showDepartmentLawyers():
+    selected_item = department_tree.selection()
+    if selected_item:
+        details = department_tree.item(selected_item, 'values')
+
+        details_window = customtkinter.CTkToplevel(main_app)
+        details_window.title("Details")
+        details_window.geometry("400x150+400+150")
+        
+        #Department Lawyers Title
+        header_label = customtkinter.CTkLabel(details_window, text=details[1] + " Department Lawyers", font=("Helvetica", 16, "bold"))
+        header_label.pack(padx=0, pady=5, anchor="w")
+
+        department_lawyers_query = """SELECT S.fname, S.lname
+                                                FROM Department D, Staff S, Lawyer L
+                                                WHERE D.department_id = %s AND L.department_id = D.department_id AND S.id = L.lawyer_id
+                                                """
+
+        db_cursor.execute(department_lawyers_query, (details[0],))
+        department_lawyers = db_cursor.fetchall()
+        department_lawyers = "\n".join([f"{fname} {lname} " for fname, lname in department_lawyers])
+        print(department_lawyers)
+
+        department_lawyer_label = customtkinter.CTkLabel(details_window, text=department_lawyers)
+        department_lawyer_label.pack(padx=0, pady=5, anchor="w")
+
+# Button to show details
+department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Department Lawyers", command=showDepartmentLawyers)
+department_details_button.place(relx=1, x=-50, rely=0, y=70, anchor="ne")
+
+#-----------------------------------------------------------------------
+# Canvas for the bar chart
+def showWinningRate():
+
+    winning_rate_window = customtkinter.CTkToplevel(main_app)
+    winning_rate_window.title("Winning Rate Statistics")
+    winning_rate_window.geometry("700x550")
+
+    winning_rate_query = """SELECT D.department_id, AVG(L.winning_rate)
+                            FROM Department D, Staff S, Lawyer L
+                            WHERE D.department_id = L.department_id AND L.lawyer_id = S.id
+                            GROUP BY D.department_id
+                            """
+
+    db_cursor.execute(winning_rate_query)
+    winning_rates = db_cursor.fetchall()
+
+    dep_ids = [i[0] for i in winning_rates]
+    average_rates = [i[1] for i in winning_rates]
+
+    fig = plt.figure(figsize = (4, 0.5))
+    plt.bar(dep_ids, average_rates, width = 0.4)
+    plt.xlabel("Departments")
+    plt.ylabel("Average Winning Rates")
+    plt.title("Winning Rate Statistics of Departments")
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(np.arange(0, 101, 5), fontsize=10)
+
+    canvas = FigureCanvasTkAgg(fig, master=winning_rate_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        winning_rate_window.destroy()
+
+    winning_rate_window.protocol("WM_DELETE_WINDOW", on_close)
+
+    # Start the event loop for the new pop-up window
+    winning_rate_window.mainloop()
+
+winning_rate_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showWinningRate)
+winning_rate_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
+
 
 
 
 # Start the ui
+#loginWindow()
 main_app.mainloop()
