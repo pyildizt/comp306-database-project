@@ -21,7 +21,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="123678zulal", 
+  passwd="123678zulal",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -768,13 +768,14 @@ showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits
 showLawsuitDetailsButton.place(x=120,y=300)
 
 def removeLawsuit():
-    selectedLawsuit = lawsuitTree.item(lawsuitTree.focus(),"values")
-    removeLawsuitQuery = """DELETE FROM Lawsuit WHERE lawsuit_id = '{0}'""".format(selectedLawsuit[0])
-    db_cursor.execute(removeLawsuitQuery)
-    db_connection.commit()
-    lawsuitTree.delete(lawsuitTree.selection())
-    return
-
+    selectedLawsuit = lawsuitTree.selection()
+    if selectedLawsuit:
+        selectedLawsuitList = lawsuitTree.item(lawsuitTree.focus(), "values")
+        removeLawsuitQuery = """DELETE FROM Lawsuit WHERE lawsuit_id = '{0}'""".format(selectedLawsuitList[0])
+        db_cursor.execute(removeLawsuitQuery)
+        db_connection.commit()
+        lawsuitTree.delete(lawsuitTree.selection())
+        return
 removeLawsuitButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Remove Lawsuit",command=removeLawsuit)
 removeLawsuitButton.place(x=350,y=300)
 
