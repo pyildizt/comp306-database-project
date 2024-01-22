@@ -235,7 +235,7 @@ tabview.pack(pady=20, padx=20, fill="both", expand=True)
 tabs = ["Lawyers", "Clients", "Lawsuits", "Departments"]
 for i in tabs:
     tabview.add(i)
-tabview.set("Lawyers") # set as default tab
+tabview.set("Clients") # set as default tab
 
 
 
@@ -330,7 +330,7 @@ clients_from_database = db_cursor.fetchall()
 
 #Client Tree View
 client_tree = ttk.Treeview(master=tabview.tab("Clients"), columns=client_columns, show="headings", selectmode="browse") 
-client_tree.pack()
+client_tree.pack(padx=10, pady=10)
 
 client_tree.heading(client_columns[0], text="Client ID")
 client_tree.heading(client_columns[1], text="Name")
@@ -357,9 +357,48 @@ for i in clients_from_database:
     client_tree.insert("", END, values=i)
     
 
+# Entry widgets for adding a new client
+#client_id,fname,lname,sex,age,phone_number,email,address,bdate,state 
+    
+client_add_client_labels_frame = Frame(master=tabview.tab("Clients"),background="black").pack(side="top", fill="x", expand=True)
+client_add_client_entries_frame = Frame(master=tabview.tab("Clients"),background="blue").pack(side="top", fill="x", expand=True)
+client_other_buttons_frame = Frame(master=tabview.tab("Clients"),background="green").pack(side="bottom", fill="both", expand=True)
+
+client_id_label = customtkinter.CTkLabel(client_add_client_labels_frame, text="Client ID:").pack(side="left") #grid(row=0,column=0) #place(x=50,y=300)
+client_id_input = customtkinter.CTkEntry(client_add_client_entries_frame, placeholder_text="CLIXX", width=60).pack(side="left") #grid(row=1, column=0) #place(x=50, y=330)
+
+#client_fname_label = customtkinter.CTkLabel(client_add_client_frame, text="Name:").grid(row=0,column=1) #place(x=200,y=300)
+#client_fname_input = customtkinter.CTkEntry(client_add_client_frame, placeholder_text="").grid(row=1,column=1) #place(x=200, y=330)
 
 
+def insertDepartmentToDatabase():
+    return
 
+# Insert Button for Department
+#insert_button = customtkinter.CTkButton(master=tabview.tab("Departments"), text="Add Department", command=insertDepartmentToDatabase)
+#insert_button.pack(pady=10)
+
+
+def createWidgets(self):
+    #topFrame = Frame(self)
+    buttonFrame = Frame(self)
+    bottomFrame = Frame(self)
+
+    #topFrame.pack(side="top", fill="both", expand=True)
+    buttonFrame.pack(side="top", fill="x")
+    bottomFrame.pack(side="bottom", fill="both", expand=True)
+
+    #listBox = Listbox(topFrame, width=30)
+    #listBox.pack(side="top", fill="both", expand=True)
+
+    Button(buttonFrame, text="Add").pack(side="left")
+    Button(buttonFrame, text="Remove").pack(side="left")
+    Button(buttonFrame, text="Edit").pack(side="left")
+
+    textBox = Text(bottomFrame, height=10, width=30)
+    textBox.pack(fill="both", expand=True)
+
+#createWidgets(tabview.tab("Clients"))
 
 ##### LAWSUITS TAB
 
@@ -371,5 +410,5 @@ for i in clients_from_database:
 
 
 # Start the ui
-loginWindow()
+#loginWindow()
 main_app.mainloop()
