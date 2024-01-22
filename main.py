@@ -59,12 +59,13 @@ populate_table(db_connection, db_cursor, insert_staff, "./data/Staff.csv")
 #Create Administrator table
 db_cursor.execute("""CREATE TABLE IF NOT EXISTS Administrator (
                     admin_id CHAR(6),
+                    password INT,
                     PRIMARY KEY (admin_id),
                     FOREIGN KEY (admin_id) REFERENCES Staff(id))""")
 
 insert_administrators = (
-    "INSERT INTO Administrator(admin_id) "
-    "VALUES (%s)"
+    "INSERT INTO Administrator(admin_id,password) "
+    "VALUES (%s,%s)"
 )
 
 populate_table(db_connection, db_cursor, insert_administrators, "./data/Administrator.csv")
@@ -286,8 +287,8 @@ remove_button.place(x=700,y=500)
 
 
 ##### DEPARTMENTS TAB
-label = customtkinter.CTkLabel(master=tabview.tab("Departments"), text="Departments")
-label.pack(pady=10, padx=10)
+department_label = customtkinter.CTkLabel(master=tabview.tab("Departments"), text="Departments")
+department_label.pack(pady=10, padx=10)
 
 #Department Headers
 df = pd.read_csv('./data/Department.csv')
@@ -368,9 +369,9 @@ def showDepartmentLawyers():
     if selected_item:
         details = department_tree.item(selected_item, 'values')
 
-        details_window = Toplevel(main_app)
+        details_window = customtkinter.CTkToplevel(main_app)
         details_window.title("Details")
-        details_window.geometry("400x150")
+        details_window.geometry("400x150+400+150")
         
         #Department Lawyers Title
         header_label = customtkinter.CTkLabel(details_window, text=details[1] + " Department Lawyers", font=("Helvetica", 16, "bold"))
@@ -388,18 +389,14 @@ def showDepartmentLawyers():
         department_lawyer_label = customtkinter.CTkLabel(details_window, text=department_lawyers)
         department_lawyer_label.pack(padx=0, pady=5, anchor="w")
 
-
-
-
-        
-
 # Button to show details
 department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Department Lawyers", command=showDepartmentLawyers)
 department_details_button.place(relx=1, x=-50, rely=0, y=70, anchor="ne")
 
 #-----------------------------------------------------------------------
 # Canvas for the bar chart
-
+department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showDepartmentLawyers)
+department_details_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
 
 
 

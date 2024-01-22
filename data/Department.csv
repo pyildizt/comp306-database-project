@@ -1,7 +1,11 @@
 department_id,department_name,admin_id
-DEP001,Trademark Law,ADM001
-DEP002,Patent Law,ADM002
-DEP003,Copyright Law,ADM003
-DEP004,Intellectual Property Litigation,ADM004
-DEP005,IP Transactions and Contracts,ADM005
-DEP006,IP Compliance and Risk Management,ADM005
+DEP001,Corporate Law,ADM001
+DEP002,Commercial Litigation,ADM002
+DEP003,Environmental Law,ADM003
+DEP004,Employment Law,ADM004
+DEP005,Real Estate Law,ADM005
+DEP006,Family Law,ADM001
+DEP007,Immigration Law,ADM002
+DEP008,White Collar Defense,ADM003
+DEP009,Privacy and Data Security,ADM004
+DEP010,Healthcare Law,ADM005
