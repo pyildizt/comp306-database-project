@@ -4,10 +4,12 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
+
 # Imports for showing details in UI
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
+import matplotlib.pyplot as plts
 
 # Import for checking inputs in UI (regular expressions)
 import re
@@ -460,6 +462,54 @@ lawyer_id_input.place(x=500, y=500)
 
 insert_button1 = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Add Lawyer", command=addLawyer)
 insert_button1.place(x=500, y=550)
+
+
+
+
+def get_clients_status_by_lawyer():
+
+    db_cursor.execute("""
+        SELECT L.lawyer_id,
+               SUM(C.state = 'Accused') AS accused_clients,
+               SUM(C.state = 'Suspect') AS suspect_clients,
+               SUM(C.state = 'Defendant') AS defendant_clients
+        FROM Lawyer L
+        LEFT JOIN Counsels CL ON L.lawyer_id = CL.lawyer_id
+        LEFT JOIN Client C ON CL.client_id = C.client_id
+        GROUP BY L.lawyer_id
+        ORDER BY L.lawyer_id
+    """)
+
+    clients_status = db_cursor.fetchall()
+
+    lawyer_ids = [row[0] for row in clients_status]
+    accused_clients = [row[1] for row in clients_status]
+    suspect_clients = [row[2] for row in clients_status]
+    defendant_clients = [row[3] for row in clients_status]
+
+    # Create a bar chart
+    plt.figure(figsize=(10, 6))
+    bar_width = 0.35
+    index = range(len(lawyer_ids))
+
+    plt.bar(index, accused_clients, bar_width, label='Accused Clients', color='green')
+    plt.bar(index, suspect_clients, bar_width, label='Suspect Clients', color='red', bottom=accused_clients)
+    plt.bar(index, defendant_clients, bar_width, label='Defendant Clients', color='blue', bottom=suspect_clients)
+    
+    plt.xticks(rotation=45, ha='right')
+    plt.xlabel('Lawyer ID')
+    plt.ylabel('Number of Clients')
+    plt.title('Number of Free and Guilty Clients by Lawyer')
+    plt.xticks([i for i in index], lawyer_ids)
+    plt.legend()
+    plt.ylim(0)  
+
+    plt.show()
+
+get_clients_status_by_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="clients_status", command=get_clients_status_by_lawyer)
+get_clients_status_by_lawyer_button.place(x=900, y=50)
+
+
 
 
 ##### CLIENTS TAB
