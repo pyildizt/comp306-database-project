@@ -12,7 +12,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="mysql201468", 
+  passwd="z1x?1zKucs",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -283,6 +283,27 @@ remove_button.place(x=700,y=500)
 
 
 ##### LAWSUITS TAB
+lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="Lawsuits")
+lawsuitTitle.pack(padx=10,pady=10)
+lawsuitColumns = ["lawsuit_id","verdict","court_date","judge_name","client_id"]
+lawsuitTree = ttk.Treeview(master=tabview.tab("Lawsuits"), columns=lawsuitColumns, show="headings", selectmode="browse")
+lawsuitTree.pack()
+lawsuitTree.heading("lawsuit_id",text="Lawsuit ID")
+lawsuitTree.heading("verdict",text="Verdict")
+lawsuitTree.heading("court_date",text="Court Date")
+lawsuitTree.heading("judge_name",text="Judge Name")
+lawsuitTree.heading("client_id",text="Client ID")
+
+allLawsuitsQuery = """SELECT * FROM Lawsuit"""
+db_cursor.execute(allLawsuitsQuery)
+allLawsuits = db_cursor.fetchall()
+for lawsuit in allLawsuits:
+    lawsuitTree.insert("",END,values=lawsuit)
+
+showLawsuitDetailsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Show Details")
+showLawsuitDetailsButton.place(x=180,y=300)
+
+
 
 
 
