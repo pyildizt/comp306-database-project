@@ -16,13 +16,12 @@ import re
 import mysql.connector
 import csv
 import pandas as pd
-import re
 
 #CREATE DATABASE:
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="z1x?1zKucs",
+  passwd="mysql201468",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -700,7 +699,7 @@ sort_clients_by_state_button = customtkinter.CTkButton(master=tabview.tab("Clien
 
 ##### LAWSUITS TAB
 
-lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="Lawsuits")
+lawsuitTitle = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"), text="LAWSUITS",font=("Courier", 30, "bold"))
 lawsuitTitle.pack(padx=10,pady=10)
 lawsuitColumns = ["lawsuit_id","verdict","court_date","judge_name","client_id"]
 lawsuitTree = ttk.Treeview(master=tabview.tab("Lawsuits"), columns=lawsuitColumns, show="headings", selectmode="browse")
@@ -767,6 +766,18 @@ def addLawsuitButtonClick():
     courtDate = courtDateEntry.get()
     judgeName = judgeNameEntry.get()
     clientId = clientIdEntry.get()
+
+    if not all([lawsuitId, verdict, courtDate, judgeName, clientId]):
+        messagebox.showwarning("Validation Error", "Please fill in all the fields.")
+        return
+
+    if not(bool(re.match(r'^LWS\d{3}$', lawsuitId)) and 
+           bool(re.match(r'^(Free|Guilty)$', verdict)) and 
+           bool(re.match(r'^\d{3}-\d{3}-\d{4}$', courtDate)) and  
+           bool(re.match(r'^CLI\d{2}$', clientId))):
+        messagebox.showwarning("Validation Error", "Invalid input format.")
+        return
+
     try:
         addLawsuitQuery = """INSERT INTO Lawsuit VALUES ('{0}','{1}','{2}','{3}','{4}')""".format(lawsuitId, verdict, courtDate, judgeName, clientId)
         print(addLawsuitQuery)
@@ -787,7 +798,7 @@ addLawsuitButton.place(x=880,y=480)
 
 
 ##### DEPARTMENTS TAB
-department_label = customtkinter.CTkLabel(master=tabview.tab("Departments"), text="Departments")
+department_label = customtkinter.CTkLabel(master=tabview.tab("Departments"), text="DEPARTMENTS",font=("Courier", 30, "bold"))
 department_label.pack(pady=10, padx=10)
 
 #Department Headers
