@@ -327,8 +327,12 @@ def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
 
-        db_cursor.execute("DELETE FROM Staff WHERE id = \"" + str(selectedItemValues[2]) + "\"") 
-        db_connection.commit()
+        try:
+            db_cursor.execute("DELETE FROM Staff WHERE id = \"" + str(selectedItemValues[2]) + "\"") 
+            db_connection.commit()
+        except (mysql.connector.errors.DatabaseError) as e:
+            messagebox.showwarning("Database Error", "Cannot delete women staff from database.")
+            return
 
         # also delete from treeview
         lawyers_tree.delete(lawyers_tree.selection())
@@ -589,7 +593,8 @@ def addLawyer():
     lawyer_winning_rate = lawyer_winning_rate_input.get()
     lawyer_department = lawyer_department_combobox.get()
 
-    if not all([lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_salary, lawyer_phone, lawyer_email, lawyer_winning_rate, lawyer_department]):
+    if not (all([lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_salary, lawyer_phone, lawyer_email, lawyer_winning_rate, lawyer_department])
+            and bool(re.match(r'^DEP\d{3}$', lawyer_department))):
         messagebox.showwarning("Validation Error", "Please fill in all the fields.")
         return
 
@@ -608,6 +613,10 @@ def addLawyer():
     if not (bool(re.match(r'^\d+$', lawyer_winning_rate))):
         messagebox.showwarning("Validation Error", "Invalid Lawyer Winning Rate format.")
         return
+    
+    if not (bool(re.match(r'^\d{10}$', lawyer_phone))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer Phone Number format.")
+        return
 
     if not (bool(re.match(r'^.+@email\.com$', lawyer_email))):
         messagebox.showwarning("Validation Error", "Invalid Lawyer Email format.")
@@ -620,20 +629,25 @@ def addLawyer():
     lawyer_ids_list = [i[0] for i in lawyer_ids]
 
     if (lawyer_id in lawyer_ids_list):
-        messagebox.showwarning("Validation Error", "Client ID already exists in Client table.")
+        messagebox.showwarning("Validation Error", "Lawyer ID already exists in Lawyer table.")
+        return
+
+    try:
+        db_cursor.execute("INSERT INTO Staff(id,fname,lname,sex,phone_number,email,salary) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                      (lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_phone, lawyer_email, lawyer_salary))
+        db_connection.commit()
+
+        db_cursor.execute("INSERT INTO Lawyer(lawyer_id,department_id,winning_rate) VALUES (%s, %s, %s)",
+                      (lawyer_id, lawyer_department, lawyer_winning_rate))
+        db_connection.commit()
+    except (mysql.connector.errors.IntegrityError) as e1:
+        messagebox.showwarning("Integrity Error",  str(e1.msg))
+        return
+    except (mysql.connector.errors.DatabaseError) as e2:
+        messagebox.showwarning("Database Error", "Cannot add men staff to database.")
         return
 
     lawyers_tree.insert("", END, values=(lawyer_fname, lawyer_lname, lawyer_id))
-    
-
-    db_cursor.execute("INSERT INTO Staff(id,fname,lname,sex,phone_number,email,salary) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                      (lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_phone, lawyer_email, lawyer_salary))
-    db_connection.commit()
-
-    db_cursor.execute("INSERT INTO Lawyer(lawyer_id,department_id,winning_rate) VALUES (%s, %s, %s)",
-                      (lawyer_id, lawyer_department, lawyer_winning_rate))
-    db_connection.commit()
-
 
     # Clear the entry widgets
     lawyer_id_input.delete(0, END)
