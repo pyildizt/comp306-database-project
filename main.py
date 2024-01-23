@@ -50,7 +50,7 @@ db_cursor.execute("USE law_firm")
 
 
 # Create Staff table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Staff (
+db_cursor.execute("""CREATE TABLE Staff (
                     id CHAR(6),
                     fname VARCHAR(30),
                     lname VARCHAR(30),
@@ -69,7 +69,7 @@ populate_table(db_connection, db_cursor, insert_staff, "./data/Staff.csv")
 
 
 #Create Administrator table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Administrator (
+db_cursor.execute("""CREATE TABLE Administrator (
                     admin_id CHAR(6),
                     password INT,
                     PRIMARY KEY (admin_id),
@@ -84,7 +84,7 @@ populate_table(db_connection, db_cursor, insert_administrators, "./data/Administ
 
 
 # Create Department table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Department (
+db_cursor.execute("""CREATE TABLE Department (
                     department_id CHAR(6),
                     department_name VARCHAR(50),
                     admin_id CHAR(6),
@@ -101,12 +101,12 @@ populate_table(db_connection, db_cursor, insert_departments, "./data/Department.
 
 
 # Create Lawyer table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawyer (
+db_cursor.execute("""CREATE TABLE Lawyer (
                     lawyer_id CHAR(6),
                     department_id CHAR(6),
                     winning_rate INT,
                     PRIMARY KEY (lawyer_id),
-                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id), 
+                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id) ON DELETE CASCADE, 
                     FOREIGN KEY (department_id) REFERENCES Department(department_id))""")
                     
 insert_lawyers = (
@@ -118,7 +118,7 @@ populate_table(db_connection, db_cursor, insert_lawyers, "./data/Lawyer.csv")
 
 
 # Create Client table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Client (
+db_cursor.execute("""CREATE TABLE Client (
                     client_id CHAR(6),
                     fname VARCHAR(30),
                     lname VARCHAR(30),
@@ -139,7 +139,7 @@ insert_clients = (
 populate_table(db_connection, db_cursor, insert_clients, "./data/Client.csv")
 
 ## create Lawsuit table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawsuit (
+db_cursor.execute("""CREATE TABLE Lawsuit (
                         lawsuit_id CHAR(6),
                         verdict VARCHAR(30),
                         court_date DATE,
@@ -158,7 +158,7 @@ populate_table(db_connection, db_cursor, insert_lawsuits, "./data/Lawsuit.csv")
 
 
 # create Represents table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Represents (
+db_cursor.execute("""CREATE TABLE Represents (
                         lawyer_id CHAR(6),
                         lawsuit_id CHAR(6),
                         fee INT,
@@ -177,7 +177,7 @@ populate_table(db_connection, db_cursor, insert_represents, "./data/Represents.c
 
 
 # Create Counsels table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Counsels (
+db_cursor.execute("""CREATE TABLE Counsels (
                         lawyer_id CHAR(6),
                         client_id CHAR(6),
                         fee INT,
@@ -195,6 +195,29 @@ insert_patents = (
 
 populate_table(db_connection, db_cursor, insert_patents, "./data/Counsels.csv")
 
+
+# Create Triggers
+# Enforce %55 women lawyers
+db_cursor.execute("""   CREATE TRIGGER before_delete_staff
+                        BEFORE DELETE ON staff
+                        FOR EACH ROW
+                        BEGIN
+                            IF OLD.sex = 'F' THEN
+                                SIGNAL SQLSTATE '55000'
+                                SET MESSAGE_TEXT = 'Cannot delete women staff from the database';
+                            END IF;
+                        END; """)
+
+# Enforce %45 men lawyers
+db_cursor.execute("""   CREATE TRIGGER before_insert_staff
+                        BEFORE INSERT ON staff
+                        FOR EACH ROW
+                        BEGIN
+                            IF NEW.sex = 'M' THEN
+                                SIGNAL SQLSTATE '45000'
+                                SET MESSAGE_TEXT = 'Cannot add men staff to the database';
+                            END IF;
+                        END; """)
 
 
 # Appearance and style of ui - not really important
@@ -304,7 +327,7 @@ def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
 
-        db_cursor.execute("DELETE FROM Lawyer WHERE lawyer_id = \"" + str(selectedItemValues[2]) + "\"") 
+        db_cursor.execute("DELETE FROM Staff WHERE id = \"" + str(selectedItemValues[2]) + "\"") 
         db_connection.commit()
 
         # also delete from treeview
