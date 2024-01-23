@@ -27,7 +27,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="123678zulal",
+  passwd="mysql201468",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -460,8 +460,8 @@ def show_best_lawyers():
 
     print()
 
-show_best_lawyers_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Best Lawyers", command=show_best_lawyers)
-show_best_lawyers_button.place(x=10, y=90)
+show_best_lawyers_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Best Lawyers", command=show_best_lawyers,width=160)
+show_best_lawyers_button.place(x=10, y=100)
 
 #CLIENT Lawyers ACCORDING TO THE Salary
 def salary_greater():
@@ -682,6 +682,10 @@ insert_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), te
 
 def get_clients_status_by_lawyer():
 
+    clients_status_window = customtkinter.CTkToplevel(main_app)
+    clients_status_window.title("Client States by Lawyer Statistics")
+    clients_status_window.geometry("1000x600")
+
     db_cursor.execute("""
         SELECT L.lawyer_id,
                SUM(C.state = 'Accused') AS accused_clients,
@@ -702,7 +706,7 @@ def get_clients_status_by_lawyer():
     defendant_clients = [row[3] for row in clients_status]
 
     # Create a bar chart
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     bar_width = 0.35
     index = range(len(lawyer_ids))
 
@@ -713,15 +717,27 @@ def get_clients_status_by_lawyer():
     plt.xticks(rotation=45, ha='right')
     plt.xlabel('Lawyer ID')
     plt.ylabel('Number of Clients')
-    plt.title('Number of Free and Guilty Clients by Lawyer')
+    plt.title('Client States by Lawyer')
     plt.xticks([i for i in index], lawyer_ids)
     plt.legend()
     plt.ylim(0)  
 
-    plt.show()
+    #plt.show()
 
-get_clients_status_by_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="clients_status", command=get_clients_status_by_lawyer)
-get_clients_status_by_lawyer_button.place(x=900, y=50)
+    canvas = FigureCanvasTkAgg(fig, master=clients_status_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        clients_status_window.destroy()
+
+    clients_status_window.protocol("WM_DELETE_WINDOW", on_close)
+
+    # Start the event loop for the new pop-up window
+    clients_status_window.mainloop()
+
+get_clients_status_by_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Client States by Lawyer", command=get_clients_status_by_lawyer, width=160)
+get_clients_status_by_lawyer_button.place(x=10, y=60) #.place(x=900, y=50)
 
 
 
