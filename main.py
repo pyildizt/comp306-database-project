@@ -465,40 +465,127 @@ show_best_lawyers_button.place(x=100, y=90)
 ##### yeni eklediğimi silemiyorum ? ##########
 
 def addLawyer():
-    fname = fname_input.get()
-    lname = lname_input.get()
     lawyer_id = lawyer_id_input.get()
+    lawyer_fname = lawyer_fname_input.get()
+    lawyer_lname = lawyer_lname_input.get()
+    lawyer_sex = lawyer_sex_input.get()
+    lawyer_salary = lawyer_salary_input.get()
+    lawyer_phone = lawyer_phone_input.get()
+    lawyer_email = lawyer_email_input.get()
+    lawyer_winning_rate = lawyer_winning_rate_input.get()
+    lawyer_department = lawyer_department_combobox.get()
 
-    if not all([fname, lname, lawyer_id]):
+    if not all([lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_salary, lawyer_phone, lawyer_email, lawyer_winning_rate, lawyer_department]):
         messagebox.showwarning("Validation Error", "Please fill in all the fields.")
         return
 
-    if not (lawyer_id.startswith("LAW") and len(lawyer_id) == 6):
-        messagebox.showwarning("Validation Error", "Invalid input format or length.")
+    if not (bool(re.match(r'^LAW\d{3}$', lawyer_id))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer ID format.")
         return
 
-    lawyers_tree.insert("", END, values=(fname, lname, lawyer_id))
-    db_cursor.execute("INSERT INTO LAWYER (fname, lname, lawyer_id) VALUES (%s, %s, %s)",
-                      (fname, lname, lawyer_id))
+    if not (bool(re.match(r'^(F|M)$', lawyer_sex))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer Sex format.")
+        return
+
+    if not (bool(re.match(r'^\d+$', lawyer_salary))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer Salary format.")
+        return
+
+    if not (bool(re.match(r'^\d+$', lawyer_winning_rate))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer Winning Rate format.")
+        return
+
+    if not (bool(re.match(r'^.+@email\.com$', lawyer_email))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer Email format.")
+        return
+
+
+    
+    lawyer_id_query = db_cursor.execute("""SELECT lawyer_id FROM Lawyer""")
+    lawyer_ids = db_cursor.fetchall() 
+    lawyer_ids_list = [i[0] for i in lawyer_ids]
+
+    if (lawyer_id in lawyer_ids_list):
+        messagebox.showwarning("Validation Error", "Client ID already exists in Client table.")
+        return
+
+    lawyers_tree.insert("", END, values=(lawyer_fname, lawyer_lname, lawyer_id))
+    
+
+    db_cursor.execute("INSERT INTO Staff(id,fname,lname,sex,phone_number,email,salary) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                      (lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_phone, lawyer_email, lawyer_salary))
     db_connection.commit()
 
-    fname_input.delete(0, END)
-    lname_input.delete(0, END)
+    db_cursor.execute("INSERT INTO Lawyer(lawyer_id,department_id,winning_rate) VALUES (%s, %s, %s)",
+                      (lawyer_id, lawyer_department, lawyer_winning_rate))
+    db_connection.commit()
+
+
+    # Clear the entry widgets
     lawyer_id_input.delete(0, END)
+    lawyer_fname_input.delete(0, END)
+    lawyer_lname_input.delete(0, END)
+    lawyer_sex_input.delete(0, END)
+    lawyer_salary_input.delete(0, END)
+    lawyer_phone_input.delete(0, END)
+    lawyer_email_input.delete(0, END)
+    lawyer_winning_rate_input.delete(0, END)
 
-fname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="First Name")
-fname_input.place(x=500, y=300)
+# Entry widgets for adding a new lawyer
+lawyer_id_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="LAWXXX", width=100)
+lawyer_id_input.place(x=270, y=330)
+lawyer_id_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Lawyer ID:").place(x=270, y=300)
 
-lname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Last Name")
-lname_input.place(x=500, y=350)
+# Label and Entry for First Name
+lawyer_fname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="", width=100)
+lawyer_fname_input.place(x=420, y=330)
+lawyer_fname_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Name:").place(x=420, y=300)
 
-lawyer_id_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="LAWXXX")
-lawyer_id_input.place(x=500, y=400)
+# Label and Entry for Last Name
+lawyer_lname_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="", width=100)
+lawyer_lname_input.place(x=570, y=330)
+lawyer_lname_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Surname:").place(x=570, y=300)
 
+# Label and Entry for Sex
+lawyer_sex_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="F or M", width=100)
+lawyer_sex_input.place(x=720, y=330)
+lawyer_sex_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Sex:").place(x=720, y=300)
 
-insert_button1 = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Add Lawyer", command=addLawyer)
-insert_button1.place(x=500, y=450)
+# Label and Entry for Age
+lawyer_salary_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="0", width=100)
+lawyer_salary_input.place(x=870, y=330)
+lawyer_salary_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Salary:").place(x=870, y=300)
 
+# Label and Entry for Phone Number
+lawyer_phone_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="xxxxxxxxxxx", width=100)
+lawyer_phone_input.place(x=270, y=410)
+lawyer_phone_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Phone Number:").place(x=270, y=380)
+
+# Label and Entry for Email
+lawyer_email_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="_@email.com", width=100)
+lawyer_email_input.place(x=420, y=410)
+lawyer_email_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Email:").place(x=420, y=380)
+
+# Winning rate
+lawyer_winning_rate_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="0", width=100)
+lawyer_winning_rate_input.place(x=570, y=410)
+lawyer_winning_rate_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Winning Rate:").place(x=570, y=380)
+
+# Add Lawyer button
+insert_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Add Lawyer", width=100, command=addLawyer)
+insert_lawyer_button.place(x=570, y=470)
+
+# Department combobox
+db_cursor.execute("SELECT department_id FROM Department")
+department_ids = db_cursor.fetchall()
+department_ids_list = [id[0] for id in department_ids]
+
+lawyer_department_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Department:").place(x=720, y=380)
+lawyer_department_combobox = ttk.Combobox(master=tabview.tab("Lawyers"), values=department_ids_list)
+lawyer_department_combobox.place(x=720, y=410)
+lawyer_department_combobox.set("Department ID")
+
+insert_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Add Lawyer", width=100, command=addLawyer).place(x=570, y=470)
 
 
 
