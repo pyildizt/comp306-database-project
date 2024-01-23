@@ -1136,6 +1136,7 @@ def verdictStatisticsCommand():
     return
 
 clientGenderComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=("No Choice","Male","Female"),state="readonly")
+clientGenderComboBox.set("No Choice")
 clientGenderLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Gender:")
 fromDateEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
 fromDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="From Which Date:")
@@ -1147,6 +1148,7 @@ for jname in JudgeListDB:
     JudgeList.append(jname[0])
 JudgeList.insert(0,"No Choice")
 whichJudgeComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=JudgeList,state="readonly")
+whichJudgeComboBox.set("No Choice")
 whichJudgeLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Sort By Judge:")
 verdictStatisticsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Verdict Statistics",command=verdictStatisticsCommand)
 
@@ -1638,5 +1640,5 @@ remove_appointment_button.place(x=880,y=280)
 
 
 # Start the ui
-#loginWindow()
+loginWindow()
 main_app.mainloop()
