@@ -1,9 +1,11 @@
 # Imports for ui
 import customtkinter
+import tkinter
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from tkcalendar import DateEntry
+from tkinter import scrolledtext
 from tkinter import ttk
 
 
@@ -429,7 +431,7 @@ search_entry.place(x=750, y=10)
 def show_best_lawyers():
     best_lawyers_window = Toplevel(main_app)
     best_lawyers_window.title("Firm's Best Lawyers")
-    best_lawyers_window.geometry("400x250+400+150")
+    best_lawyers_window.geometry("600x350+400+150")
 
     best_lawyers_exp = customtkinter.CTkLabel(best_lawyers_window, text= "Lawyers with No Failed Lawsuit", font=("Helvetica", 16, "bold"))
     best_lawyers_exp.pack(padx=30, pady=5, anchor="w")
@@ -459,7 +461,96 @@ def show_best_lawyers():
     print()
 
 show_best_lawyers_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Best Lawyers", command=show_best_lawyers)
-show_best_lawyers_button.place(x=100, y=90)
+show_best_lawyers_button.place(x=10, y=90)
+
+#CLIENT Lawyers ACCORDING TO THE Salary
+def salary_greater():
+    salary = filter_salary_input.get()
+
+    salary_filter_window = customtkinter.CTkToplevel(main_app)
+    salary_filter_window.title("Lawyers Salaries")
+    salary_filter_window.geometry("450x250+400+150")
+        
+    #Department Lawyers Title
+    header_label = customtkinter.CTkLabel(salary_filter_window, text= "Lawyers with Salaries Greater Than " + salary, font=("Courier", 16, "bold"))
+    header_label.pack(padx=10, pady=5, anchor="w")
+
+    #Salary filter query
+    db_cursor.execute("""SELECT CONCAT(S.fname, " ", S.lname), S.salary
+                        FROM Lawyer L JOIN Staff S ON L.lawyer_id = S.id
+                        WHERE S.salary > %s 
+                        """, (salary, ))
+
+
+    salary_and_lawyers = db_cursor.fetchall()
+    salary_and_lawyers_txt = "\n".join([f"{name}: {salary} " for name, salary in salary_and_lawyers])
+
+    scrolled_text = scrolledtext.ScrolledText(salary_filter_window, wrap=tkinter.WORD, width=60, height=10, font=("Courier", 12))
+    scrolled_text.pack(padx=15, pady=5, anchor="w")
+    scrolled_text.insert(tkinter.END, salary_and_lawyers_txt)
+
+
+    db_cursor.execute("""SELECT COUNT(*)
+                        FROM Lawyer L JOIN Staff S ON L.lawyer_id = S.id
+                        WHERE S.salary > %s 
+                        """, (salary, ))
+
+    lawyer_count = db_cursor.fetchall()
+
+    lawyer_count_label = customtkinter.CTkLabel(salary_filter_window, text= "Lawyers Count: " + str(lawyer_count[0][0]), font=("Courier", 14, "bold"))
+    lawyer_count_label.pack(padx=10, pady=5, anchor="w")
+
+
+
+def salary_less():
+    salary = filter_salary_input.get()
+
+    salary_filter_window = customtkinter.CTkToplevel(main_app)
+    salary_filter_window.title("Lawyers Salaries")
+    salary_filter_window.geometry("450x250+400+150")
+        
+    #Department Lawyers Title
+    header_label = customtkinter.CTkLabel(salary_filter_window, text= "Lawyers with Salaries Less Than " + salary, font=("Courier", 16, "bold"))
+    header_label.pack(padx=10, pady=5, anchor="w")
+
+    #Salary filter query
+    db_cursor.execute("""SELECT CONCAT(S.fname, " ", S.lname), S.salary
+                        FROM Lawyer L JOIN Staff S ON L.lawyer_id = S.id
+                        WHERE S.salary < %s 
+                        """, (salary, ))
+
+
+    salary_and_lawyers = db_cursor.fetchall()
+    salary_and_lawyers_txt = "\n".join([f"{name}: {salary} " for name, salary in salary_and_lawyers])
+
+    scrolled_text = scrolledtext.ScrolledText(salary_filter_window, wrap=tkinter.WORD, width=60, height=10, font=("Courier", 12))
+    scrolled_text.pack(padx=15, pady=5, anchor="w")
+    scrolled_text.insert(tkinter.END, salary_and_lawyers_txt)
+
+
+    db_cursor.execute("""SELECT COUNT(*)
+                        FROM Lawyer L JOIN Staff S ON L.lawyer_id = S.id
+                        WHERE S.salary < %s 
+                        """, (salary, ))
+
+    lawyer_count = db_cursor.fetchall()
+
+    lawyer_count_label = customtkinter.CTkLabel(salary_filter_window, text= "Lawyers Count: " + str(lawyer_count[0][0]), font=("Courier", 14, "bold"))
+    lawyer_count_label.pack(padx=10, pady=5, anchor="w")
+
+
+filter_lawyer_salary_label = customtkinter.CTkLabel(tabview.tab("Lawyers"), text="Show Lawyers Salary", font=("Courier", 20, "bold"))
+filter_lawyer_salary_label.place(x = 10, y = 160)
+
+filter_salary_input = customtkinter.CTkEntry(master=tabview.tab("Lawyers"), placeholder_text="Enter Salary", width = 200)
+filter_salary_input.place(x=10, y=190)
+
+salary_greater_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"),text='Greater Than',command=salary_greater) 
+salary_greater_button.place(x= 10, y = 230)
+
+salary_less_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"),text='Less Than',command=salary_less) 
+salary_less_button.place(x= 10, y = 265)
+
 
 
 ##### yeni eklediğimi silemiyorum ? ##########
@@ -1293,6 +1384,12 @@ counseling_tree.heading("client_name",text="Client Name")
 counseling_tree.heading("fee",text="Fee")
 counseling_tree.heading("date",text="Date")
 
+counseling_tree.column(column=0, width = 100, stretch = False)
+counseling_tree.column(column=2, width = 100, stretch = False)
+counseling_tree.column(column=4, width = 100, stretch = False)
+
+
+
 # data from the Lawyer and Staff tables 
 db_cursor.execute("""
     SELECT C.lawyer_id, CONCAT(S.fname, " ", S.lname), C.client_id, CONCAT(CL.fname, " ", CL.lname), C.fee, C.date
@@ -1358,8 +1455,11 @@ def calculate_total_fee():
 fee_calculate_button = customtkinter.CTkButton(master=tabview.tab("Counseling Appointments"),text='Calculate Fee',command=calculate_total_fee) 
 fee_calculate_button.place(x= 50, y = 395)
 
-calculated_fee_label = customtkinter.CTkLabel(tabview.tab("Counseling Appointments"), text="", font=("Courier", 20, "bold"))
+style = ttk.Style()
+style.configure("Red.TLabel", foreground="red")
+calculated_fee_label = ttk.Label(tabview.tab("Counseling Appointments"), text="TOTAL FEE", font=("Courier", 16, "bold"), style="Red.TLabel")
 calculated_fee_label.place(x = 55, y = 430)
+
 
 # INSERT COUNSELING APPOINTMENT
 insert_appointment_label = customtkinter.CTkLabel(tabview.tab("Counseling Appointments"), text="Insert Appointment", font=("Courier", 20, "bold"))
