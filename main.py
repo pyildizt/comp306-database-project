@@ -27,7 +27,7 @@ import pandas as pd
 db_connection = mysql.connector.connect(
   host="localhost",
   user="root",
-  passwd="123678zulal",
+  passwd="mysql201468",
   auth_plugin='mysql_native_password'
 )
 db_cursor = db_connection.cursor(buffered=True)
@@ -50,7 +50,7 @@ db_cursor.execute("USE law_firm")
 
 
 # Create Staff table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Staff (
+db_cursor.execute("""CREATE TABLE Staff (
                     id CHAR(6),
                     fname VARCHAR(30),
                     lname VARCHAR(30),
@@ -69,7 +69,7 @@ populate_table(db_connection, db_cursor, insert_staff, "./data/Staff.csv")
 
 
 #Create Administrator table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Administrator (
+db_cursor.execute("""CREATE TABLE Administrator (
                     admin_id CHAR(6),
                     password INT,
                     PRIMARY KEY (admin_id),
@@ -84,7 +84,7 @@ populate_table(db_connection, db_cursor, insert_administrators, "./data/Administ
 
 
 # Create Department table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Department (
+db_cursor.execute("""CREATE TABLE Department (
                     department_id CHAR(6),
                     department_name VARCHAR(50),
                     admin_id CHAR(6),
@@ -101,12 +101,12 @@ populate_table(db_connection, db_cursor, insert_departments, "./data/Department.
 
 
 # Create Lawyer table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawyer (
+db_cursor.execute("""CREATE TABLE Lawyer (
                     lawyer_id CHAR(6),
                     department_id CHAR(6),
                     winning_rate INT,
                     PRIMARY KEY (lawyer_id),
-                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id), 
+                    FOREIGN KEY (lawyer_id) REFERENCES Staff(id) ON DELETE CASCADE, 
                     FOREIGN KEY (department_id) REFERENCES Department(department_id))""")
                     
 insert_lawyers = (
@@ -118,7 +118,7 @@ populate_table(db_connection, db_cursor, insert_lawyers, "./data/Lawyer.csv")
 
 
 # Create Client table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Client (
+db_cursor.execute("""CREATE TABLE Client (
                     client_id CHAR(6),
                     fname VARCHAR(30),
                     lname VARCHAR(30),
@@ -139,7 +139,7 @@ insert_clients = (
 populate_table(db_connection, db_cursor, insert_clients, "./data/Client.csv")
 
 ## create Lawsuit table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Lawsuit (
+db_cursor.execute("""CREATE TABLE Lawsuit (
                         lawsuit_id CHAR(6),
                         verdict VARCHAR(30),
                         court_date DATE,
@@ -158,7 +158,7 @@ populate_table(db_connection, db_cursor, insert_lawsuits, "./data/Lawsuit.csv")
 
 
 # create Represents table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Represents (
+db_cursor.execute("""CREATE TABLE Represents (
                         lawyer_id CHAR(6),
                         lawsuit_id CHAR(6),
                         fee INT,
@@ -177,7 +177,7 @@ populate_table(db_connection, db_cursor, insert_represents, "./data/Represents.c
 
 
 # Create Counsels table
-db_cursor.execute("""CREATE TABLE IF NOT EXISTS Counsels (
+db_cursor.execute("""CREATE TABLE Counsels (
                         lawyer_id CHAR(6),
                         client_id CHAR(6),
                         fee INT,
@@ -195,6 +195,29 @@ insert_patents = (
 
 populate_table(db_connection, db_cursor, insert_patents, "./data/Counsels.csv")
 
+
+# Create Triggers
+# Enforce %55 women lawyers
+db_cursor.execute("""   CREATE TRIGGER before_delete_staff
+                        BEFORE DELETE ON staff
+                        FOR EACH ROW
+                        BEGIN
+                            IF OLD.sex = 'F' THEN
+                                SIGNAL SQLSTATE '55000'
+                                SET MESSAGE_TEXT = 'Cannot delete women staff from the database';
+                            END IF;
+                        END; """)
+
+# Enforce %45 men lawyers
+db_cursor.execute("""   CREATE TRIGGER before_insert_staff
+                        BEFORE INSERT ON staff
+                        FOR EACH ROW
+                        BEGIN
+                            IF NEW.sex = 'M' THEN
+                                SIGNAL SQLSTATE '45000'
+                                SET MESSAGE_TEXT = 'Cannot add men staff to the database';
+                            END IF;
+                        END; """)
 
 
 # Appearance and style of ui - not really important
@@ -304,8 +327,12 @@ def removeLawyerFromDatabase():
     if lawyers_tree.selection() != None: # this is the row selected by user
         selectedItemValues = lawyers_tree.item(lawyers_tree.focus()).get('values')
 
-        db_cursor.execute("DELETE FROM Lawyer WHERE lawyer_id = \"" + str(selectedItemValues[0]) + "\"")
-        db_connection.commit()
+        try:
+            db_cursor.execute("DELETE FROM Staff WHERE id = \"" + str(selectedItemValues[2]) + "\"") 
+            db_connection.commit()
+        except (mysql.connector.errors.DatabaseError) as e:
+            messagebox.showwarning("Database Error", "Cannot delete women staff from database.")
+            return
 
         # also delete from treeview
         lawyers_tree.delete(lawyers_tree.selection())
@@ -460,8 +487,8 @@ def show_best_lawyers():
 
     print()
 
-show_best_lawyers_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Best Lawyers", command=show_best_lawyers)
-show_best_lawyers_button.place(x=10, y=90)
+show_best_lawyers_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Best Lawyers", command=show_best_lawyers,width=160)
+show_best_lawyers_button.place(x=10, y=100)
 
 #CLIENT Lawyers ACCORDING TO THE Salary
 def salary_greater():
@@ -566,7 +593,8 @@ def addLawyer():
     lawyer_winning_rate = lawyer_winning_rate_input.get()
     lawyer_department = lawyer_department_combobox.get()
 
-    if not all([lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_salary, lawyer_phone, lawyer_email, lawyer_winning_rate, lawyer_department]):
+    if not (all([lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_salary, lawyer_phone, lawyer_email, lawyer_winning_rate, lawyer_department])
+            and bool(re.match(r'^DEP\d{3}$', lawyer_department))):
         messagebox.showwarning("Validation Error", "Please fill in all the fields.")
         return
 
@@ -585,6 +613,10 @@ def addLawyer():
     if not (bool(re.match(r'^\d+$', lawyer_winning_rate))):
         messagebox.showwarning("Validation Error", "Invalid Lawyer Winning Rate format.")
         return
+    
+    if not (bool(re.match(r'^\d{10}$', lawyer_phone))):
+        messagebox.showwarning("Validation Error", "Invalid Lawyer Phone Number format.")
+        return
 
     if not (bool(re.match(r'^.+@email\.com$', lawyer_email))):
         messagebox.showwarning("Validation Error", "Invalid Lawyer Email format.")
@@ -597,20 +629,25 @@ def addLawyer():
     lawyer_ids_list = [i[0] for i in lawyer_ids]
 
     if (lawyer_id in lawyer_ids_list):
-        messagebox.showwarning("Validation Error", "Client ID already exists in Client table.")
+        messagebox.showwarning("Validation Error", "Lawyer ID already exists in Lawyer table.")
+        return
+
+    try:
+        db_cursor.execute("INSERT INTO Staff(id,fname,lname,sex,phone_number,email,salary) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                      (lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_phone, lawyer_email, lawyer_salary))
+        db_connection.commit()
+
+        db_cursor.execute("INSERT INTO Lawyer(lawyer_id,department_id,winning_rate) VALUES (%s, %s, %s)",
+                      (lawyer_id, lawyer_department, lawyer_winning_rate))
+        db_connection.commit()
+    except (mysql.connector.errors.IntegrityError) as e1:
+        messagebox.showwarning("Integrity Error",  str(e1.msg))
+        return
+    except (mysql.connector.errors.DatabaseError) as e2:
+        messagebox.showwarning("Database Error", "Cannot add men staff to database.")
         return
 
     lawyers_tree.insert("", END, values=(lawyer_fname, lawyer_lname, lawyer_id))
-    
-
-    db_cursor.execute("INSERT INTO Staff(id,fname,lname,sex,phone_number,email,salary) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                      (lawyer_id, lawyer_fname, lawyer_lname, lawyer_sex, lawyer_phone, lawyer_email, lawyer_salary))
-    db_connection.commit()
-
-    db_cursor.execute("INSERT INTO Lawyer(lawyer_id,department_id,winning_rate) VALUES (%s, %s, %s)",
-                      (lawyer_id, lawyer_department, lawyer_winning_rate))
-    db_connection.commit()
-
 
     # Clear the entry widgets
     lawyer_id_input.delete(0, END)
@@ -682,6 +719,10 @@ insert_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), te
 
 def get_clients_status_by_lawyer():
 
+    clients_status_window = customtkinter.CTkToplevel(main_app)
+    clients_status_window.title("Client States by Lawyer Statistics")
+    clients_status_window.geometry("1000x600")
+
     db_cursor.execute("""
         SELECT L.lawyer_id,
                SUM(C.state = 'Accused') AS accused_clients,
@@ -702,7 +743,7 @@ def get_clients_status_by_lawyer():
     defendant_clients = [row[3] for row in clients_status]
 
     # Create a bar chart
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     bar_width = 0.35
     index = range(len(lawyer_ids))
 
@@ -713,15 +754,27 @@ def get_clients_status_by_lawyer():
     plt.xticks(rotation=45, ha='right')
     plt.xlabel('Lawyer ID')
     plt.ylabel('Number of Clients')
-    plt.title('Number of Free and Guilty Clients by Lawyer')
+    plt.title('Client States by Lawyer')
     plt.xticks([i for i in index], lawyer_ids)
     plt.legend()
     plt.ylim(0)  
 
-    plt.show()
+    #plt.show()
 
-get_clients_status_by_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="clients_status", command=get_clients_status_by_lawyer)
-get_clients_status_by_lawyer_button.place(x=900, y=50)
+    canvas = FigureCanvasTkAgg(fig, master=clients_status_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side='top', fill='both', expand=1)
+
+    def on_close():
+        clients_status_window.destroy()
+
+    clients_status_window.protocol("WM_DELETE_WINDOW", on_close)
+
+    # Start the event loop for the new pop-up window
+    clients_status_window.mainloop()
+
+get_clients_status_by_lawyer_button = customtkinter.CTkButton(master=tabview.tab("Lawyers"), text="Client States by Lawyer", command=get_clients_status_by_lawyer, width=160)
+get_clients_status_by_lawyer_button.place(x=10, y=60) #.place(x=900, y=50)
 
 
 
