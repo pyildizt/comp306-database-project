@@ -369,19 +369,20 @@ def show_lawyer_info():
         lawyer_details = db_cursor.fetchone()
 
         # yeni window oluşturup gösteriyor - başka nasıl gösterebiliriz?
-        details_window = Toplevel(main_app)
+        details_window = customtkinter.CTkToplevel(main_app)
+        details_window.geometry("400x200+400+100")
         details_window.title(f"Info for Lawyer ID {lawyer_id}")
 
         if lawyer_details:
-            details_label = Label(details_window, text=f"Lawyer ID: {lawyer_details[0]}\n"
-                                                        f"Department ID: {lawyer_details[1]}\n"
-                                                       f"Winning Rate: {lawyer_details[2]}\n"
-                                                       f"First Name: {lawyer_details[3]}\n"
-                                                        f"Last Name: {lawyer_details[4]}\n"
-                                                       f"Sex: {lawyer_details[5]}\n"
-                                                       f"Phone Number: {lawyer_details[6]}\n"
-                                                       f"Email: {lawyer_details[7]}\n"
-                                                      f"Salary: {lawyer_details[8]}")
+            details_label = Label(details_window, text= f"Lawyer ID:\t\t{lawyer_details[0]}\n"
+                                                        f"Department ID:\t{lawyer_details[1]}\n"
+                                                        f"Winning Rate:\t{lawyer_details[2]}\n"
+                                                        f"First Name:\t\t{lawyer_details[3]}\n"
+                                                        f"Last Name:\t\t{lawyer_details[4]}\n"
+                                                        f"Sex:\t\t{lawyer_details[5]}\n"
+                                                        f"Phone Number:\t{lawyer_details[6]}\n"
+                                                        f"Email:\t\t{lawyer_details[7]}\n"
+                                                        f"Salary:\t\t{lawyer_details[8]}", justify="left")
             details_label.pack(pady=20, padx=20)
         else:
             no_details_label = Label(details_window, text=f"No info found for Lawyer ID {lawyer_id}")
@@ -458,7 +459,7 @@ search_entry.place(x=750, y=10)
 def show_best_lawyers():
     best_lawyers_window = Toplevel(main_app)
     best_lawyers_window.title("Firm's Best Lawyers")
-    best_lawyers_window.geometry("600x350+400+150")
+    best_lawyers_window.geometry("350x200+400+150")
 
     best_lawyers_exp = customtkinter.CTkLabel(best_lawyers_window, text= "Lawyers with No Failed Lawsuit", font=("Helvetica", 16, "bold"))
     best_lawyers_exp.pack(padx=30, pady=5, anchor="w")
@@ -476,10 +477,10 @@ def show_best_lawyers():
                         """)
 
     successful_lawyers = db_cursor.fetchall()
-    successful_lawyers_txt = "\n".join([f"{fname} {lname} - Lawsuit Number: {lawsuit} " for fname, lname, lawsuit in successful_lawyers])
+    successful_lawyers_txt = "\n".join([f"{fname} {lname}\t- Lawsuit Number: {lawsuit} " for fname, lname, lawsuit in successful_lawyers])
     print(successful_lawyers_txt)
 
-    successful_lawyers_label = customtkinter.CTkLabel(best_lawyers_window, text=successful_lawyers_txt)
+    successful_lawyers_label = customtkinter.CTkLabel(best_lawyers_window, text=successful_lawyers_txt, anchor="w")
     successful_lawyers_label.pack(padx=10, pady=5, anchor="w")
 
 
@@ -495,7 +496,7 @@ def salary_greater():
     salary = filter_salary_input.get()
 
     salary_filter_window = customtkinter.CTkToplevel(main_app)
-    salary_filter_window.title("Lawyers Salaries")
+    salary_filter_window.title("Lawyers' Salaries")
     salary_filter_window.geometry("450x250+400+150")
         
     #Department Lawyers Title
@@ -515,7 +516,7 @@ def salary_greater():
     scrolled_text = scrolledtext.ScrolledText(salary_filter_window, wrap=tkinter.WORD, width=60, height=10, font=("Courier", 12))
     scrolled_text.pack(padx=15, pady=5, anchor="w")
     scrolled_text.insert(tkinter.END, salary_and_lawyers_txt)
-
+    scrolled_text.configure(state="disabled")
 
     db_cursor.execute("""SELECT COUNT(*)
                         FROM Lawyer L JOIN Staff S ON L.lawyer_id = S.id
@@ -553,6 +554,7 @@ def salary_less():
     scrolled_text = scrolledtext.ScrolledText(salary_filter_window, wrap=tkinter.WORD, width=60, height=10, font=("Courier", 12))
     scrolled_text.pack(padx=15, pady=5, anchor="w")
     scrolled_text.insert(tkinter.END, salary_and_lawyers_txt)
+    scrolled_text.configure(state="disabled")
 
 
     db_cursor.execute("""SELECT COUNT(*)
@@ -709,7 +711,7 @@ department_ids = db_cursor.fetchall()
 department_ids_list = [id[0] for id in department_ids]
 
 lawyer_department_label = customtkinter.CTkLabel(master=tabview.tab("Lawyers"), text="Department:").place(x=720, y=380)
-lawyer_department_combobox = ttk.Combobox(master=tabview.tab("Lawyers"), values=department_ids_list)
+lawyer_department_combobox = ttk.Combobox(master=tabview.tab("Lawyers"), values=department_ids_list, state="readonly")
 lawyer_department_combobox.place(x=720, y=410)
 lawyer_department_combobox.set("Department ID")
 
@@ -1133,7 +1135,7 @@ def verdictStatisticsCommand():
 
     return
 
-clientGenderComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=("No Choice","Male","Female"))
+clientGenderComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=("No Choice","Male","Female"),state="readonly")
 clientGenderLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Gender:")
 fromDateEntry = customtkinter.CTkEntry(master=tabview.tab("Lawsuits"),placeholder_text="YYYY-MM-DD")
 fromDateLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="From Which Date:")
@@ -1144,7 +1146,7 @@ JudgeList = []
 for jname in JudgeListDB:
     JudgeList.append(jname[0])
 JudgeList.insert(0,"No Choice")
-whichJudgeComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=JudgeList)
+whichJudgeComboBox = customtkinter.CTkComboBox(master=tabview.tab("Lawsuits"),values=JudgeList,state="readonly")
 whichJudgeLabel = customtkinter.CTkLabel(master=tabview.tab("Lawsuits"),text="Sort By Judge:")
 verdictStatisticsButton = customtkinter.CTkButton(master= tabview.tab("Lawsuits"),text="Verdict Statistics",command=verdictStatisticsCommand)
 
@@ -1348,7 +1350,7 @@ def showDepartmentLawyers():
 
         details_window = customtkinter.CTkToplevel(main_app)
         details_window.title("Details")
-        details_window.geometry("400x150+400+150")
+        details_window.geometry("350x200+400+150")
         
         #Department Lawyers Title
         header_label = customtkinter.CTkLabel(details_window, text=details[1] + " Department Lawyers", font=("Helvetica", 16, "bold"))
@@ -1361,14 +1363,14 @@ def showDepartmentLawyers():
 
         db_cursor.execute(department_lawyers_query, (details[0],))
         department_lawyers = db_cursor.fetchall()
-        department_lawyers = "\n".join([f"{fname} {lname} " for fname, lname in department_lawyers])
+        department_lawyers = "\n".join([f"   {fname} {lname} " for fname, lname in department_lawyers])
         print(department_lawyers)
 
-        department_lawyer_label = customtkinter.CTkLabel(details_window, text=department_lawyers)
+        department_lawyer_label = Label(details_window, text=department_lawyers,  justify="left")
         department_lawyer_label.pack(padx=10, pady=5, anchor="w")
 
 # Button to show details
-department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Department Lawyers", command=showDepartmentLawyers)
+department_details_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Department Lawyers", command=showDepartmentLawyers, width=160)
 department_details_button.place(relx=1, x=-50, rely=0, y=70, anchor="ne")
 
 #-----------------------------------------------------------------------
@@ -1411,8 +1413,37 @@ def showWinningRate():
     # Start the event loop for the new pop-up window
     winning_rate_window.mainloop()
 
-winning_rate_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showWinningRate)
+winning_rate_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Winning Rate Statistics", command=showWinningRate, width=160)
 winning_rate_button.place(relx=1, x=-50, rely=0, y=120, anchor="ne")
+
+def bestDepartment():
+    best_department_window = customtkinter.CTkToplevel(main_app)
+    best_department_window.title("Firm's Best Department")
+    best_department_window.geometry("400x150+400+150")
+
+    best_department_exp = customtkinter.CTkLabel(best_department_window, text= "Department with Most Cases Won", font=("Helvetica", 16, "bold"))
+    best_department_exp.pack(padx=70, pady=5, anchor="w")
+
+    db_cursor.execute("""SELECT d.department_id, d.department_name, COUNT(l.lawyer_id) as cases_won
+                        FROM Department d
+                        JOIN Lawyer l ON d.department_id = l.department_id
+                        JOIN Represents r ON l.lawyer_id = r.lawyer_id
+                        JOIN Lawsuit ls ON r.lawsuit_id = ls.lawsuit_id
+                        WHERE ls.verdict = 'Free'
+                        GROUP BY d.department_id, d.department_name
+                        ORDER BY cases_won DESC
+                        LIMIT 1
+                        """)
+
+    best_department = db_cursor.fetchall()
+    best_department_txt = "".join([f"{department_id}: {department_name} Department has won {cases_won} cases." for department_id, department_name, cases_won in best_department])
+    print(best_department_txt)
+
+    best_department_label = customtkinter.CTkLabel(best_department_window, text=best_department_txt)
+    best_department_label.pack(padx=10, pady=5, anchor="w")
+
+best_department_button = customtkinter.CTkButton(tabview.tab("Departments"), text="Best Department", command=bestDepartment, width=160)
+best_department_button.place(relx=1, x=-50, rely=0, y=170, anchor="ne")
 
 # ****** COUNSELING APPOINTMENTS TAB ***************
 counseling_label = customtkinter.CTkLabel(
@@ -1456,10 +1487,10 @@ for counseling in counseling_data:
 
 #Client Total Fee Calculation
 client_fee_label = customtkinter.CTkLabel(tabview.tab("Counseling Appointments"), text="Client Total Fee", font=("Courier", 20, "bold"))
-client_fee_label.place(x = 50, y = 300)
+client_fee_label.place(x = 130, y = 300)
 
-client_name_search = customtkinter.CTkEntry(master=tabview.tab("Counseling Appointments"), placeholder_text="Client Name", width = 200)
-client_name_search.place(x=50, y=330)
+client_name_search = customtkinter.CTkEntry(master=tabview.tab("Counseling Appointments"), placeholder_text="Client Name", width = 150)
+client_name_search.place(x=130, y=330)
 
 db_cursor.execute("""SELECT DISTINCT CONCAT(CL.fname, " ", CL.lname) 
                     FROM Client CL, Counsels CO
@@ -1470,9 +1501,9 @@ all_clients = db_cursor.fetchall()
 client_names_list = [client[0] for client in all_clients]
 
 #Dropdown Client box
-client_fee_combobox = ttk.Combobox(tabview.tab("Counseling Appointments"), values=client_names_list, state="readonly", width = 30)
+client_fee_combobox = ttk.Combobox(tabview.tab("Counseling Appointments"), values=client_names_list, state="readonly", width = 20)
 client_fee_combobox.set("Client")
-client_fee_combobox.place(x=50, y=365)
+client_fee_combobox.place(x=130, y=365)
 
 #Client search button for filtering clients
 def client_name_search_func():
@@ -1487,7 +1518,7 @@ def client_name_search_func():
 
 
 client_search_button = customtkinter.CTkButton(master=tabview.tab("Counseling Appointments"),text='Search',command=client_name_search_func) 
-client_search_button.place(x= 260, y = 330)
+client_search_button.place(x= 290, y = 330)
 
 
 #Total Fee Calculation
@@ -1506,17 +1537,17 @@ def calculate_total_fee():
                 
 
 fee_calculate_button = customtkinter.CTkButton(master=tabview.tab("Counseling Appointments"),text='Calculate Fee',command=calculate_total_fee) 
-fee_calculate_button.place(x= 50, y = 395)
+fee_calculate_button.place(x= 130, y = 395)
 
 style = ttk.Style()
 style.configure("Red.TLabel", foreground="red")
 calculated_fee_label = ttk.Label(tabview.tab("Counseling Appointments"), text="TOTAL FEE", font=("Courier", 16, "bold"), style="Red.TLabel")
-calculated_fee_label.place(x = 55, y = 430)
+calculated_fee_label.place(x = 135, y = 430)
 
 
 # INSERT COUNSELING APPOINTMENT
 insert_appointment_label = customtkinter.CTkLabel(tabview.tab("Counseling Appointments"), text="Insert Appointment", font=("Courier", 20, "bold"))
-insert_appointment_label.place(x = 600, y = 300)
+insert_appointment_label.place(x = 520, y = 300)
 
 #lawyer ids
 db_cursor.execute("""SELECT lawyer_id FROM Lawyer ORDER BY lawyer_id ASC""")
@@ -1532,20 +1563,20 @@ client_id_list = [id[0] for id in client_ids]
 #lawyer id dropdown list
 lawyer_id_combobox = ttk.Combobox(tabview.tab("Counseling Appointments"), values=lawyer_id_list, state="readonly", width = 30)
 lawyer_id_combobox.set("Lawyer ID")
-lawyer_id_combobox.place(x=600, y=330)
+lawyer_id_combobox.place(x=520, y=330)
 
 #client id drop
 client_id_combobox = ttk.Combobox(tabview.tab("Counseling Appointments"), values=client_id_list, state="readonly", width = 30)
 client_id_combobox.set("Client ID")
-client_id_combobox.place(x=600, y=360)
+client_id_combobox.place(x=520, y=360)
 
 #client fee input
 client_fee_input = customtkinter.CTkEntry(master=tabview.tab("Counseling Appointments"), placeholder_text="Fee", width = 250)
-client_fee_input.place(x=600, y=390)
+client_fee_input.place(x=520, y=390)
 
 #appointment date input
 appointment_date_input = customtkinter.CTkEntry(master=tabview.tab("Counseling Appointments"), placeholder_text="yyyy-mm-dd", width = 250)
-appointment_date_input.place(x=600, y=425)
+appointment_date_input.place(x=520, y=425)
 
 def insert_appointment():
     lawyer_id = lawyer_id_combobox.get()
@@ -1588,7 +1619,7 @@ def insert_appointment():
 
 
 insert_appointment_button = customtkinter.CTkButton(master=tabview.tab("Counseling Appointments"),text='Add Appointment',command=insert_appointment) 
-insert_appointment_button.place(x= 600, y = 460)
+insert_appointment_button.place(x= 520, y = 460)
 
 #Remove appointment
 def removeAppointment():
@@ -1603,7 +1634,7 @@ def removeAppointment():
 
 
 remove_appointment_button = customtkinter.CTkButton(master=tabview.tab("Counseling Appointments"), text="Remove", command=removeAppointment)
-remove_appointment_button.place(x=950,y=275)
+remove_appointment_button.place(x=880,y=280)
 
 
 # Start the ui
